@@ -1,613 +1,846 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Calculator</title>
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: 'Courier New', monospace;
-    background: #1a1a1a;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-  }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Calculator</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none; /* subtle: makes it feel like a kiosk/calc, but text input still works */
+    }
 
-  /* LOGIN SCREEN */
-  #loginScreen {
-    position: fixed; inset: 0;
-    background: #1a1a1a;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-  }
-  .login-box {
-    background: #2a2a2a;
-    border: 1px solid #444;
-    border-radius: 12px;
-    padding: 32px 28px;
-    width: 280px;
-    text-align: center;
-  }
-  .login-box h2 {
-    color: #e0e0e0;
-    font-size: 15px;
-    font-weight: normal;
-    letter-spacing: 2px;
-    margin-bottom: 24px;
-    opacity: 0.7;
-  }
-  .login-box input {
-    width: 100%;
-    background: #1a1a1a;
-    border: 1px solid #555;
-    border-radius: 6px;
-    color: #e0e0e0;
-    font-family: 'Courier New', monospace;
-    font-size: 14px;
-    padding: 10px 12px;
-    margin-bottom: 10px;
-    outline: none;
-  }
-  .login-box input:focus { border-color: #888; }
-  .login-btn {
-    width: 100%;
-    background: #3a3a3a;
-    border: 1px solid #666;
-    border-radius: 6px;
-    color: #e0e0e0;
-    font-family: 'Courier New', monospace;
-    font-size: 14px;
-    padding: 11px;
-    margin-top: 6px;
-    cursor: pointer;
-    letter-spacing: 1px;
-    transition: background 0.2s;
-  }
-  .login-btn:hover { background: #4a4a4a; }
-  #loginErr {
-    color: #cc5555;
-    font-size: 12px;
-    margin-top: 10px;
-    min-height: 16px;
-  }
+    body {
+      font-family: 'Courier New', 'SF Mono', monospace;
+      background: #000000; /* deep black for seamless phone integration */
+      height: 100vh;
+      width: 100vw;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: fixed;
+      touch-action: pan-x pan-y; /* safe */
+    }
 
-  /* MAIN CALC CONTAINER */
-  #app {
-    display: none;
-    flex-direction: column;
-    width: 320px;
-    height: 580px;
-    background: #1e1e1e;
-    border-radius: 20px;
-    border: 1px solid #333;
-    overflow: hidden;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.8);
-  }
+    /* LOGIN SCREEN - minimalist, looks like a calculator access code */
+    #loginScreen {
+      position: fixed;
+      inset: 0;
+      background: #121212;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      backdrop-filter: blur(0px);
+    }
 
-  /* TOP: CHAT AREA (upper half) */
-  #chatSection {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    background: #161616;
-    border-bottom: 2px solid #2a2a2a;
-    position: relative;
-    overflow: hidden;
-  }
-  #chatHeader {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 8px 14px;
-    border-bottom: 1px solid #2a2a2a;
-    background: #1a1a1a;
-  }
-  .chat-user-info {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .user-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: #4caf50;
-  }
-  .chat-username {
-    color: #888;
-    font-size: 11px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-  }
-  .logout-btn {
-    background: none;
-    border: none;
-    color: #555;
-    cursor: pointer;
-    font-size: 11px;
-    font-family: 'Courier New', monospace;
-    padding: 2px 6px;
-    border-radius: 4px;
-    transition: color 0.2s;
-  }
-  .logout-btn:hover { color: #888; }
+    .login-box {
+      background: #1c1c1e;
+      border-radius: 28px;
+      padding: 32px 24px;
+      width: 280px;
+      text-align: center;
+      border: 0.5px solid #2c2c2e;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    }
 
-  #messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 10px 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    scrollbar-width: none;
-  }
-  #messages::-webkit-scrollbar { display: none; }
+    .login-box h2 {
+      color: #e5e5e5;
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      margin-bottom: 24px;
+      opacity: 0.7;
+      font-family: monospace;
+    }
 
-  .msg {
-    max-width: 75%;
-    padding: 7px 11px;
-    border-radius: 10px;
-    font-size: 12px;
-    line-height: 1.4;
-    word-break: break-word;
-    animation: fadeIn 0.2s ease;
-  }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
-  @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+    .login-box input {
+      width: 100%;
+      background: #0e0e0e;
+      border: 0.5px solid #3a3a3c;
+      border-radius: 14px;
+      color: #f0f0f0;
+      font-family: 'Courier New', monospace;
+      font-size: 15px;
+      padding: 12px 16px;
+      margin-bottom: 12px;
+      outline: none;
+      text-align: center;
+    }
 
-  .msg.sent {
-    background: #2d4a3e;
-    color: #b8e6c8;
-    align-self: flex-end;
-    border-bottom-right-radius: 3px;
-  }
-  .msg.recv {
-    background: #2a2a3a;
-    color: #b8c4e0;
-    align-self: flex-start;
-    border-bottom-left-radius: 3px;
-  }
-  .msg.vanishing {
-    animation: fadeOut 0.5s ease forwards;
-  }
-  .msg-time {
-    font-size: 9px;
-    opacity: 0.4;
-    margin-top: 2px;
-    text-align: right;
-  }
+    .login-box input:focus {
+      border-color: #6e6e72;
+      background: #141416;
+    }
 
-  #chatInput {
-    display: flex;
-    padding: 8px 10px;
-    gap: 6px;
-    background: #1a1a1a;
-    border-top: 1px solid #2a2a2a;
-  }
-  #msgInput {
-    flex: 1;
-    background: #252525;
-    border: 1px solid #3a3a3a;
-    border-radius: 16px;
-    color: #e0e0e0;
-    font-family: 'Courier New', monospace;
-    font-size: 12px;
-    padding: 7px 12px;
-    outline: none;
-  }
-  #msgInput:focus { border-color: #555; }
-  #msgInput::placeholder { color: #444; }
-  #sendBtn {
-    background: #2d4a3e;
-    border: none;
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    cursor: pointer;
-    color: #b8e6c8;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.2s;
-    flex-shrink: 0;
-  }
-  #sendBtn:hover { background: #3d5e4e; }
+    .login-btn {
+      width: 100%;
+      background: #2c2c2e;
+      border: none;
+      border-radius: 14px;
+      color: #e5e5e5;
+      font-family: 'Courier New', monospace;
+      font-size: 15px;
+      padding: 12px;
+      margin-top: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: 0.1s linear;
+    }
 
-  /* BOTTOM: CALCULATOR */
-  #calcSection {
-    height: 280px;
-    background: #1e1e1e;
-    display: flex;
-    flex-direction: column;
-  }
-  #calcDisplay {
-    background: #141414;
-    padding: 10px 16px 8px;
-    text-align: right;
-    border-bottom: 1px solid #2a2a2a;
-  }
-  #calcExpr {
-    color: #555;
-    font-size: 11px;
-    min-height: 14px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  #calcResult {
-    color: #e8e8e8;
-    font-size: 26px;
-    font-weight: bold;
-    letter-spacing: 1px;
-    min-height: 32px;
-  }
+    .login-btn:active {
+      background: #3a3a3c;
+      transform: scale(0.97);
+    }
 
-  #calcButtons {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1px;
-    flex: 1;
-    background: #111;
-    padding: 1px;
-  }
-  .calc-btn {
-    background: #252525;
-    border: none;
-    color: #d0d0d0;
-    font-family: 'Courier New', monospace;
-    font-size: 14px;
-    cursor: pointer;
-    transition: background 0.1s, transform 0.05s;
-    border-radius: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-  }
-  .calc-btn:active { transform: scale(0.94); }
-  .calc-btn.op { background: #2a2520; color: #f0a050; }
-  .calc-btn.eq { background: #2d4a3e; color: #b8e6c8; }
-  .calc-btn.clear { background: #3a2020; color: #e08080; }
-  .calc-btn.zero { grid-column: span 2; }
-  .calc-btn:hover { background: #303030; }
-  .calc-btn.op:hover { background: #352e24; }
-  .calc-btn.eq:hover { background: #3d5e4e; }
-  .calc-btn.clear:hover { background: #4a2828; }
+    #loginErr {
+      color: #ff6b6b;
+      font-size: 11px;
+      margin-top: 12px;
+      min-height: 18px;
+    }
 
-  .other-user-indicator {
-    text-align: center;
-    font-size: 10px;
-    color: #444;
-    padding: 4px;
-    letter-spacing: 1px;
-  }
-</style>
+    /* MAIN APP (CALCULATOR SHELL) - full phone size, looks like advanced calc */
+    #app {
+      display: none;
+      width: 100%;
+      height: 100%;
+      background: #0f0f10;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* CHAT AREA (UPPER HALF) — hidden in plain sight */
+    .chat-zone {
+      flex: 1;
+      background: #0a0a0c;
+      display: flex;
+      flex-direction: column;
+      border-bottom: 1px solid #222226;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* tiny header like a status bar */
+    .chat-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background: #121214;
+      border-bottom: 0.5px solid #252529;
+    }
+
+    .user-badge {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .status-led {
+      width: 7px;
+      height: 7px;
+      background: #34c759;
+      border-radius: 50%;
+      box-shadow: 0 0 3px #34c759;
+    }
+
+    .user-name {
+      color: #8e8e93;
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      font-weight: 500;
+    }
+
+    .exit-chat {
+      background: none;
+      border: none;
+      color: #636366;
+      font-size: 11px;
+      font-family: monospace;
+      padding: 4px 8px;
+      cursor: pointer;
+      border-radius: 20px;
+    }
+
+    .exit-chat:active {
+      background: #242426;
+    }
+
+    /* message container */
+    .messages-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 12px 8px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      scrollbar-width: thin;
+    }
+
+    .messages-container::-webkit-scrollbar {
+      width: 3px;
+    }
+
+    .bubble {
+      max-width: 78%;
+      padding: 8px 12px;
+      border-radius: 18px;
+      font-size: 13px;
+      line-height: 1.35;
+      word-break: break-word;
+      font-family: 'Courier New', monospace;
+      background: #1c1c1e;
+      color: #e9e9ef;
+      transition: opacity 0.2s ease;
+      box-shadow: 0 1px 1px rgba(0,0,0,0.2);
+    }
+
+    .bubble.sent {
+      background: #2a4438;
+      color: #d4f5e2;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+
+    .bubble.recv {
+      background: #1f1f24;
+      color: #dddfe8;
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+    }
+
+    .vanishing-bubble {
+      animation: vanishFade 0.45s ease forwards;
+    }
+
+    @keyframes vanishFade {
+      0% { opacity: 1; transform: scale(1);}
+      100% { opacity: 0; transform: scale(0.92); display: none; }
+    }
+
+    .msg-meta {
+      font-size: 9px;
+      opacity: 0.5;
+      margin-top: 4px;
+      letter-spacing: 0.3px;
+    }
+
+    .chat-input-area {
+      display: flex;
+      padding: 8px 12px 12px 12px;
+      gap: 8px;
+      background: #0f0f10;
+      border-top: 0.5px solid #222226;
+    }
+
+    .chat-input-area input {
+      flex: 1;
+      background: #19191c;
+      border: 0.5px solid #2e2e32;
+      border-radius: 28px;
+      color: #f2f2f6;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      padding: 10px 15px;
+      outline: none;
+    }
+
+    .chat-input-area input::placeholder {
+      color: #4a4a4e;
+      font-size: 11px;
+    }
+
+    .chat-send {
+      background: #2a4438;
+      width: 40px;
+      border-radius: 30px;
+      border: none;
+      color: #cef2de;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: 0.1s;
+    }
+
+    .chat-send:active {
+      background: #3e5e4e;
+      transform: scale(0.94);
+    }
+
+    /* OTHER USER tiny hint (looks like a debug label) */
+    .other-hint {
+      font-size: 9px;
+      text-align: center;
+      color: #3a3a3c;
+      margin-top: 3px;
+      margin-bottom: 4px;
+      letter-spacing: 0.3px;
+    }
+
+    /* CALCULATOR SECTION (lower half) — rich and fully working */
+    .calc-panel {
+      height: 280px;
+      background: #111112;
+      display: flex;
+      flex-direction: column;
+      border-top: 1px solid #232327;
+    }
+
+    .calc-screen {
+      background: #08080a;
+      padding: 12px 18px;
+      text-align: right;
+      border-bottom: 0.5px solid #222;
+    }
+
+    .calc-expr {
+      color: #6c6c70;
+      font-size: 12px;
+      min-height: 18px;
+      font-family: monospace;
+    }
+
+    .calc-result {
+      color: #f5f5f7;
+      font-size: 34px;
+      font-weight: 600;
+      font-family: monospace;
+      word-break: break-word;
+      letter-spacing: 1px;
+    }
+
+    .calc-buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.5px;
+      flex: 1;
+      background: #1a1a1c;
+      padding: 1px;
+    }
+
+    .calc-key {
+      background: #1e1e22;
+      border: none;
+      color: #e3e3e8;
+      font-family: 'Courier New', monospace;
+      font-size: 20px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: 0.05s linear;
+    }
+
+    .calc-key:active {
+      background: #34343a;
+      transform: scale(0.96);
+    }
+
+    .calc-key.operator {
+      background: #25232a;
+      color: #ff9f4a;
+    }
+
+    .calc-key.equal {
+      background: #2a4438;
+      color: #b0f0c8;
+    }
+
+    .calc-key.clear {
+      background: #322022;
+      color: #ff8989;
+    }
+
+    /* phone fullscreen perfection */
+    @media (max-width: 480px) {
+      .bubble {
+        font-size: 12px;
+        padding: 7px 11px;
+      }
+      .calc-result {
+        font-size: 28px;
+      }
+    }
+
+    /* no tell-tale signs */
+    .chat-header .user-name span {
+      font-size: 12px;
+    }
+  </style>
 </head>
 <body>
 
-<!-- LOGIN -->
+<!-- LOGIN overlay -->
 <div id="loginScreen">
   <div class="login-box">
-    <h2>CALC v2.4</h2>
-    <input type="text" id="loginName" placeholder="name" autocomplete="off" />
-    <input type="password" id="loginPass" placeholder="password" autocomplete="off" />
-    <button class="login-btn" onclick="doLogin()">ENTER</button>
+    <h2>█ CALCULATOR v5.2 █</h2>
+    <input type="text" id="loginName" placeholder="user id" autocomplete="off" spellcheck="false">
+    <input type="password" id="loginPass" placeholder="pin" autocomplete="off">
+    <button class="login-btn" onclick="attemptLogin()">UNLOCK</button>
     <div id="loginErr"></div>
   </div>
 </div>
 
-<!-- MAIN APP -->
+<!-- MAIN APP / CALCULATOR INTERFACE with hidden chat -->
 <div id="app">
-  <!-- CHAT TOP -->
-  <div id="chatSection">
-    <div id="chatHeader">
-      <div class="chat-user-info">
-        <div class="user-dot"></div>
-        <span class="chat-username" id="displayName">nil</span>
+  <!-- upper half: disguised chat -->
+  <div class="chat-zone">
+    <div class="chat-header">
+      <div class="user-badge">
+        <div class="status-led"></div>
+        <div class="user-name" id="displayCurrentUser">nil</div>
       </div>
-      <button class="logout-btn" onclick="doLogout()">exit</button>
+      <button class="exit-chat" onclick="performLogout()">⟳ EXIT</button>
     </div>
-    <div id="messages">
-      <div class="other-user-indicator" id="otherIndicator"></div>
+    <div class="messages-container" id="messagesContainer">
+      <div class="other-hint" id="otherHint"></div>
     </div>
-    <div id="chatInput">
-      <input type="text" id="msgInput" placeholder="message..." maxlength="200" autocomplete="off" />
-      <button id="sendBtn" onclick="sendMessage()">➤</button>
+    <div class="chat-input-area">
+      <input type="text" id="chatMessageInput" placeholder="type..." maxlength="180" autocomplete="off">
+      <button class="chat-send" onclick="dispatchMessage()">↵</button>
     </div>
   </div>
 
-  <!-- CALCULATOR BOTTOM -->
-  <div id="calcSection">
-    <div id="calcDisplay">
-      <div id="calcExpr"></div>
-      <div id="calcResult">0</div>
+  <!-- lower half: full calculator logic, realistic -->
+  <div class="calc-panel">
+    <div class="calc-screen">
+      <div class="calc-expr" id="calcExpression"></div>
+      <div class="calc-result" id="calcResultDisplay">0</div>
     </div>
-    <div id="calcButtons">
-      <button class="calc-btn clear" onclick="calcClear()">C</button>
-      <button class="calc-btn op" onclick="calcSign()">+/-</button>
-      <button class="calc-btn op" onclick="calcPercent()">%</button>
-      <button class="calc-btn op" onclick="calcOp('/')">÷</button>
-
-      <button class="calc-btn" onclick="calcNum('7')">7</button>
-      <button class="calc-btn" onclick="calcNum('8')">8</button>
-      <button class="calc-btn" onclick="calcNum('9')">9</button>
-      <button class="calc-btn op" onclick="calcOp('*')">×</button>
-
-      <button class="calc-btn" onclick="calcNum('4')">4</button>
-      <button class="calc-btn" onclick="calcNum('5')">5</button>
-      <button class="calc-btn" onclick="calcNum('6')">6</button>
-      <button class="calc-btn op" onclick="calcOp('-')">−</button>
-
-      <button class="calc-btn" onclick="calcNum('1')">1</button>
-      <button class="calc-btn" onclick="calcNum('2')">2</button>
-      <button class="calc-btn" onclick="calcNum('3')">3</button>
-      <button class="calc-btn op" onclick="calcOp('+')">+</button>
-
-      <button class="calc-btn zero" onclick="calcNum('0')">0</button>
-      <button class="calc-btn" onclick="calcDot()">.</button>
-      <button class="calc-btn eq" onclick="calcEquals()">=</button>
+    <div class="calc-buttons" id="calcGrid">
+      <!-- dynamic but static built -->
     </div>
   </div>
 </div>
 
 <script>
-// ---- AUTH ----
-const USERS = {
-  'nil': '143',
-  'hi': '143'
-};
-
-let currentUser = null;
-let otherUser = null;
-
-function doLogin() {
-  const name = document.getElementById('loginName').value.trim().toLowerCase();
-  const pass = document.getElementById('loginPass').value.trim();
-  if (USERS[name] && USERS[name] === pass) {
-    currentUser = name;
-    otherUser = Object.keys(USERS).find(u => u !== name);
-    document.getElementById('displayName').textContent = name;
-    document.getElementById('otherIndicator').textContent = '← ' + otherUser + ' —';
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('app').style.display = 'flex';
-    loadMessages();
-  } else {
-    document.getElementById('loginErr').textContent = 'wrong credentials';
-    setTimeout(() => document.getElementById('loginErr').textContent = '', 2000);
-  }
-}
-
-function doLogout() {
-  currentUser = null;
-  document.getElementById('loginScreen').style.display = 'flex';
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('loginName').value = '';
-  document.getElementById('loginPass').value = '';
-  document.getElementById('messages').innerHTML = '<div class="other-user-indicator" id="otherIndicator"></div>';
-}
-
-document.getElementById('loginPass').addEventListener('keydown', e => {
-  if (e.key === 'Enter') doLogin();
-});
-
-// ---- STORAGE (messages stored in memory, survive tab but reset on reload) ----
-let allMessages = [];
-const AUTO_VANISH_MS = 5000;
-
-function saveMessages() {
-  try { sessionStorage.setItem('sc_msgs', JSON.stringify(allMessages)); } catch(e) {}
-}
-function loadMessages() {
-  try {
-    const d = sessionStorage.getItem('sc_msgs');
-    if (d) {
-      allMessages = JSON.parse(d);
-      allMessages.forEach(m => renderMessage(m, true));
-    }
-  } catch(e) {}
-  setupVanishTimers();
-}
-
-// ---- MESSAGING ----
-function sendMessage() {
-  const input = document.getElementById('msgInput');
-  const text = input.value.trim();
-  if (!text) return;
-  input.value = '';
-
-  const msg = {
-    id: Date.now() + '_' + Math.random(),
-    sender: currentUser,
-    text: text,
-    ts: Date.now()
+  // ---------- AUTHENTICATION ----------
+  const ALLOWED_CRED = {
+    'nil': '143',
+    'hi': '143'
   };
-  allMessages.push(msg);
-  saveMessages();
-  renderMessage(msg, false);
-  scheduleVanish(msg.id, AUTO_VANISH_MS);
-}
 
-document.getElementById('msgInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') sendMessage();
-});
+  let currentSessionUser = null;      // 'nil' or 'hi'
+  let otherPeer = null;               // the conversation partner
 
-// Poll for messages from other user (simulated via sessionStorage)
-setInterval(() => {
-  if (!currentUser) return;
-  try {
-    const d = sessionStorage.getItem('sc_msgs');
-    if (!d) return;
-    const stored = JSON.parse(d);
-    stored.forEach(m => {
-      if (m.sender !== currentUser) {
-        if (!allMessages.find(x => x.id === m.id)) {
-          allMessages.push(m);
-          renderMessage(m, false);
-          scheduleVanish(m.id, AUTO_VANISH_MS);
+  // ---------- Message storage with auto vanish (5 sec) ----------
+  // We'll store messages in memory AND persist to sessionStorage, but with auto-vanish
+  let messageList = [];               // each: { id, sender, text, timestamp }
+
+  const VANISH_DELAY_MS = 5000;       // 5 seconds after being seen (delivered)
+
+  // Helper functions
+  function saveMessagesToStorage() {
+    try {
+      // store full list, but only for current session per device
+      sessionStorage.setItem('sec_chat_msgs', JSON.stringify(messageList));
+    } catch(e) {}
+  }
+
+  function loadMessagesFromStorage() {
+    try {
+      const stored = sessionStorage.getItem('sec_chat_msgs');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          messageList = parsed;
+          // re-render all messages without duplication
+          renderAllMessages();
+          scheduleAllVanishing();
         }
       }
-    });
-  } catch(e) {}
-}, 500);
+    } catch(e) {}
+  }
 
-function renderMessage(msg, skipAnim) {
-  const container = document.getElementById('messages');
-  const isMine = msg.sender === currentUser;
-  const el = document.createElement('div');
-  el.className = 'msg ' + (isMine ? 'sent' : 'recv');
-  el.id = 'msg_' + msg.id;
-  if (skipAnim) el.style.animation = 'none';
+  // DOM elements
+  const messagesContainer = document.getElementById('messagesContainer');
+  const otherHintSpan = document.getElementById('otherHint');
 
-  const timeStr = new Date(msg.ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-  el.innerHTML = `<div>${escHtml(msg.text)}</div><div class="msg-time">${isMine ? 'you' : msg.sender} · ${timeStr}</div>`;
-  container.appendChild(el);
-  container.scrollTop = container.scrollHeight;
-}
+  function renderMessageItem(msgObj, isNew = true) {
+    const isMine = (msgObj.sender === currentSessionUser);
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `bubble ${isMine ? 'sent' : 'recv'}`;
+    messageDiv.id = `msgblob_${msgObj.id}`;
 
-function scheduleVanish(id, delay) {
-  const elapsed = Date.now() - parseInt(id.split('_')[0]);
-  const remaining = Math.max(0, delay - elapsed);
-  setTimeout(() => vanishMessage(id), remaining);
-}
+    const senderName = isMine ? 'you' : msgObj.sender;
+    const timeStr = new Date(msgObj.timestamp).toLocaleTimeString([], { hour: '2-digit', minute:'2-digit' });
+    messageDiv.innerHTML = `
+      <div>${escapeHtml(msgObj.text)}</div>
+      <div class="msg-meta">${senderName} • ${timeStr}</div>
+    `;
+    // insert before the hint element if exists, else append
+    if (otherHintSpan && otherHintSpan.parentNode === messagesContainer) {
+      messagesContainer.insertBefore(messageDiv, otherHintSpan);
+    } else {
+      messagesContainer.appendChild(messageDiv);
+    }
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
 
-function setupVanishTimers() {
-  allMessages.forEach(m => scheduleVanish(m.id, AUTO_VANISH_MS));
-}
+  function renderAllMessages() {
+    if (!messagesContainer) return;
+    // clear all except the hint element
+    const children = [...messagesContainer.children];
+    for (let child of children) {
+      if (child !== otherHintSpan) child.remove();
+    }
+    // re-render all in order
+    for (let msg of messageList) {
+      renderMessageItem(msg, false);
+    }
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
 
-function vanishMessage(id) {
-  const el = document.getElementById('msg_' + id);
-  if (el) {
-    el.classList.add('vanishing');
+  function scheduleMessageVanish(messageId) {
+    const targetMsg = messageList.find(m => m.id === messageId);
+    if (!targetMsg) return;
+    // compute remaining time based on creation
+    const age = Date.now() - targetMsg.timestamp;
+    let remainingDelay = VANISH_DELAY_MS - age;
+    if (remainingDelay < 0) remainingDelay = 10;
     setTimeout(() => {
-      if (el.parentNode) el.parentNode.removeChild(el);
-    }, 500);
+      vanishMessageById(messageId);
+    }, remainingDelay);
   }
-  allMessages = allMessages.filter(m => m.id !== id);
-  saveMessages();
-}
 
-function escHtml(t) {
-  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-// ---- CALCULATOR ----
-let calcState = { display: '0', expr: '', waitingOp: false, prevVal: null, op: null, justEvaled: false };
-
-function calcUpdate() {
-  document.getElementById('calcResult').textContent = calcState.display;
-  document.getElementById('calcExpr').textContent = calcState.expr;
-}
-
-function calcNum(n) {
-  if (calcState.waitingOp || calcState.justEvaled) {
-    calcState.display = n;
-    calcState.waitingOp = false;
-    calcState.justEvaled = false;
-  } else {
-    calcState.display = calcState.display === '0' ? n : calcState.display + n;
+  function vanishMessageById(msgId) {
+    const msgIndex = messageList.findIndex(m => m.id === msgId);
+    if (msgIndex === -1) return;
+    // remove from DOM with animation
+    const domEl = document.getElementById(`msgblob_${msgId}`);
+    if (domEl) {
+      domEl.classList.add('vanishing-bubble');
+      domEl.addEventListener('animationend', () => {
+        if (domEl.parentNode) domEl.remove();
+      });
+    }
+    // remove from data array
+    messageList.splice(msgIndex, 1);
+    saveMessagesToStorage();
   }
-  calcUpdate();
-}
 
-function calcDot() {
-  if (calcState.waitingOp || calcState.justEvaled) {
-    calcState.display = '0.';
-    calcState.waitingOp = false;
-    calcState.justEvaled = false;
-  } else if (!calcState.display.includes('.')) {
-    calcState.display += '.';
+  function scheduleAllVanishing() {
+    for (let msg of messageList) {
+      scheduleMessageVanish(msg.id);
+    }
   }
-  calcUpdate();
-}
 
-function calcOp(op) {
-  const val = parseFloat(calcState.display);
-  if (calcState.prevVal !== null && !calcState.waitingOp) {
-    const res = compute(calcState.prevVal, val, calcState.op);
-    calcState.display = fmtNum(res);
-    calcState.prevVal = res;
-  } else {
-    calcState.prevVal = val;
+  function addNewMessage(sender, text) {
+    const newMsg = {
+      id: Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+      sender: sender,
+      text: text.trim(),
+      timestamp: Date.now()
+    };
+    messageList.push(newMsg);
+    saveMessagesToStorage();
+    renderMessageItem(newMsg, true);
+    scheduleMessageVanish(newMsg.id);
+    return newMsg;
   }
-  calcState.op = op;
-  calcState.expr = fmtNum(calcState.prevVal) + ' ' + opSym(op);
-  calcState.waitingOp = true;
-  calcState.justEvaled = false;
-  calcUpdate();
-}
 
-function calcEquals() {
-  if (calcState.prevVal === null || calcState.op === null) return;
-  const val = parseFloat(calcState.display);
-  const res = compute(calcState.prevVal, val, calcState.op);
-  calcState.expr = fmtNum(calcState.prevVal) + ' ' + opSym(calcState.op) + ' ' + fmtNum(val) + ' =';
-  calcState.display = fmtNum(res);
-  calcState.prevVal = null;
-  calcState.op = null;
-  calcState.justEvaled = true;
-  calcUpdate();
-}
-
-function calcClear() {
-  calcState = { display: '0', expr: '', waitingOp: false, prevVal: null, op: null, justEvaled: false };
-  calcUpdate();
-}
-
-function calcSign() {
-  calcState.display = fmtNum(parseFloat(calcState.display) * -1);
-  calcUpdate();
-}
-
-function calcPercent() {
-  calcState.display = fmtNum(parseFloat(calcState.display) / 100);
-  calcUpdate();
-}
-
-function compute(a, b, op) {
-  switch(op) {
-    case '+': return a + b;
-    case '-': return a - b;
-    case '*': return a * b;
-    case '/': return b !== 0 ? a / b : 0;
+  // ---------- MESSAGING LOGIC BETWEEN nil AND hi ----------
+  function sendMessageToOther() {
+    const inputField = document.getElementById('chatMessageInput');
+    const rawText = inputField.value;
+    if (!rawText.trim()) return;
+    const finalText = rawText.trim();
+    inputField.value = '';
+    if (!currentSessionUser || !otherPeer) return;
+    // Add local message
+    addNewMessage(currentSessionUser, finalText);
+    // Simulate "other user" receiving after a short realistic delay (300ms)
+    // because realtime: both tabs will sync via storage event. But also to reflect both ends we
+    // simulate: since both users may use same browser? but on Vercel this is a single client.
+    // However both 'nil' and 'hi' can be used in same browser or different tabs? but requirement:
+    // two people can chat: "nil" and "hi" both added. Since both can login on separate devices
+    // OR same device via separate browser windows, but we also implement cross-window sync.
+    // We'll use storage event + periodic polling to feel realtime.
+    // Also simulate immediate response from other? No, but storage sync will work.
+    // Force a small sync to reflect reverse side soon: but the other person's session will poll every second.
   }
-  return b;
-}
 
-function fmtNum(n) {
-  if (Number.isInteger(n)) return String(n);
-  const s = parseFloat(n.toFixed(10)).toString();
-  return s;
-}
+  // incoming polling (every 600 ms) from sessionStorage
+  let lastKnownMsgIds = new Set();
 
-function opSym(op) {
-  return { '+': '+', '-': '−', '*': '×', '/': '÷' }[op] || op;
-}
-
-// keyboard for calc
-document.addEventListener('keydown', e => {
-  if (document.activeElement === document.getElementById('msgInput')) return;
-  if (document.activeElement === document.getElementById('loginName') ||
-      document.activeElement === document.getElementById('loginPass')) return;
-  if ('0123456789'.includes(e.key)) calcNum(e.key);
-  else if (e.key === '.') calcDot();
-  else if (e.key === '+') calcOp('+');
-  else if (e.key === '-') calcOp('-');
-  else if (e.key === '*') calcOp('*');
-  else if (e.key === '/') { e.preventDefault(); calcOp('/'); }
-  else if (e.key === 'Enter' || e.key === '=') calcEquals();
-  else if (e.key === 'Escape') calcClear();
-  else if (e.key === 'Backspace') {
-    if (calcState.display.length > 1) calcState.display = calcState.display.slice(0,-1);
-    else calcState.display = '0';
-    calcUpdate();
+  function syncRemoteMessages() {
+    if (!currentSessionUser) return;
+    try {
+      const remoteData = sessionStorage.getItem('sec_chat_msgs');
+      if (remoteData) {
+        const remoteMsgs = JSON.parse(remoteData);
+        if (Array.isArray(remoteMsgs)) {
+          let changed = false;
+          for (let rMsg of remoteMsgs) {
+            const existsLocally = messageList.some(l => l.id === rMsg.id);
+            if (!existsLocally) {
+              // new message from other user
+              messageList.push(rMsg);
+              changed = true;
+              renderMessageItem(rMsg, true);
+              scheduleMessageVanish(rMsg.id);
+            }
+          }
+          // Also handle deletions (if vanished from other side) - but vanish is local, avoid conflict.
+          // To keep consistency: remove messages that are not in remote but we have? 
+          // However vanish is per client, but we respect vanish individually. But we don't want ghost.
+          // simpler: sync only additions.
+          if (changed) {
+            saveMessagesToStorage();
+          }
+        }
+      }
+    } catch(e) {}
   }
-});
+
+  // start periodic sync (simulate two-way chat on same browser or different tabs)
+  setInterval(() => {
+    if (currentSessionUser) {
+      syncRemoteMessages();
+    }
+  }, 700);
+
+  // also listen to storage event for cross-tab realtime
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'sec_chat_msgs' && currentSessionUser) {
+      syncRemoteMessages();
+    }
+  });
+
+  // send message handler
+  function dispatchMessage() {
+    if (!currentSessionUser) return;
+    sendMessageToOther();
+  }
+
+  // enter key
+  document.getElementById('chatMessageInput')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      dispatchMessage();
+    }
+  });
+
+  // ---------- LOGIC ----------
+  function attemptLogin() {
+    const nameInput = document.getElementById('loginName').value.trim().toLowerCase();
+    const passInput = document.getElementById('loginPass').value.trim();
+    if (ALLOWED_CRED[nameInput] && ALLOWED_CRED[nameInput] === passInput) {
+      currentSessionUser = nameInput;
+      otherPeer = (nameInput === 'nil') ? 'hi' : 'nil';
+      document.getElementById('displayCurrentUser').innerText = currentSessionUser;
+      document.getElementById('otherHint').innerHTML = `◈ ${otherPeer} ◈`;
+      // reset message list for new session? but keep existing messages from storage if any? but vanish anyway
+      // Better fresh start per login? but experience wise keep previous messages might be confusing.
+      // However requirement: messages disappear 5 sec after seen so no long history. But we load from storage but vanish soon.
+      messageList = [];
+      saveMessagesToStorage();
+      // load any existing from storage ? but we will sync anyway.
+      loadMessagesFromStorage();
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('app').style.display = 'flex';
+      document.getElementById('chatMessageInput').focus();
+    } else {
+      const errDiv = document.getElementById('loginErr');
+      errDiv.innerText = 'access denied';
+      setTimeout(() => errDiv.innerText = '', 1800);
+    }
+  }
+
+  function performLogout() {
+    currentSessionUser = null;
+    otherPeer = null;
+    messageList = [];
+    saveMessagesToStorage();
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('loginName').value = '';
+    document.getElementById('loginPass').value = '';
+    const container = document.getElementById('messagesContainer');
+    if (container) {
+      const children = [...container.children];
+      for (let child of children) {
+        if (child !== otherHintSpan) child.remove();
+      }
+    }
+  }
+
+  // password enter shortcut
+  document.getElementById('loginPass')?.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter') attemptLogin();
+  });
+
+  // ---------- FULL CALCULATOR ----------
+  let calc = {
+    currentDisplay: "0",
+    prevValue: null,
+    operator: null,
+    waitingForOperand: false,
+    expressionPreview: ""
+  };
+
+  function updateCalcUI() {
+    document.getElementById('calcResultDisplay').innerText = calc.currentDisplay;
+    document.getElementById('calcExpression').innerText = calc.expressionPreview;
+  }
+
+  function calcInputNumber(num) {
+    if (calc.waitingForOperand) {
+      calc.currentDisplay = num;
+      calc.waitingForOperand = false;
+    } else {
+      calc.currentDisplay = calc.currentDisplay === "0" ? num : calc.currentDisplay + num;
+    }
+    updateCalcUI();
+  }
+
+  function calcInputDecimal() {
+    if (calc.waitingForOperand) {
+      calc.currentDisplay = "0.";
+      calc.waitingForOperand = false;
+    } else if (!calc.currentDisplay.includes(".")) {
+      calc.currentDisplay += ".";
+    }
+    updateCalcUI();
+  }
+
+  function handleOperator(op) {
+    const inputVal = parseFloat(calc.currentDisplay);
+    if (calc.prevValue !== null && calc.operator && !calc.waitingForOperand) {
+      let result = evaluate(calc.prevValue, inputVal, calc.operator);
+      calc.currentDisplay = String(result);
+      calc.prevValue = result;
+    } else {
+      calc.prevValue = inputVal;
+    }
+    calc.operator = op;
+    calc.waitingForOperand = true;
+    calc.expressionPreview = `${calc.prevValue} ${op === '*' ? '×' : op === '/' ? '÷' : op}`;
+    updateCalcUI();
+  }
+
+  function evaluate(a, b, op) {
+    switch(op) {
+      case '+': return a + b;
+      case '-': return a - b;
+      case '*': return a * b;
+      case '/': return b !== 0 ? a / b : 0;
+      default: return b;
+    }
+  }
+
+  function computeResult() {
+    if (calc.operator === null || calc.waitingForOperand) return;
+    const secondOperand = parseFloat(calc.currentDisplay);
+    let result = evaluate(calc.prevValue, secondOperand, calc.operator);
+    calc.expressionPreview = `${calc.prevValue} ${calc.operator === '*' ? '×' : calc.operator === '/' ? '÷' : calc.operator} ${secondOperand} =`;
+    calc.currentDisplay = String(result);
+    calc.prevValue = null;
+    calc.operator = null;
+    calc.waitingForOperand = true;
+    updateCalcUI();
+  }
+
+  function clearCalc() {
+    calc = {
+      currentDisplay: "0",
+      prevValue: null,
+      operator: null,
+      waitingForOperand: false,
+      expressionPreview: ""
+    };
+    updateCalcUI();
+  }
+
+  function toggleSign() {
+    let curr = parseFloat(calc.currentDisplay);
+    calc.currentDisplay = String(-curr);
+    updateCalcUI();
+  }
+
+  function percentCalc() {
+    let curr = parseFloat(calc.currentDisplay);
+    calc.currentDisplay = String(curr / 100);
+    updateCalcUI();
+  }
+
+  // generate calculator UI buttons dynamically
+  function buildCalculator() {
+    const grid = document.getElementById('calcGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    const buttons = [
+      { label: 'C', action: 'clear', cls: 'clear' }, { label: '+/-', action: 'sign', cls: 'operator' }, { label: '%', action: 'percent', cls: 'operator' }, { label: '÷', action: 'op_div', cls: 'operator' },
+      { label: '7', action: 'num7', cls: '' }, { label: '8', action: 'num8', cls: '' }, { label: '9', action: 'num9', cls: '' }, { label: '×', action: 'op_mul', cls: 'operator' },
+      { label: '4', action: 'num4', cls: '' }, { label: '5', action: 'num5', cls: '' }, { label: '6', action: 'num6', cls: '' }, { label: '−', action: 'op_sub', cls: 'operator' },
+      { label: '1', action: 'num1', cls: '' }, { label: '2', action: 'num2', cls: '' }, { label: '3', action: 'num3', cls: '' }, { label: '+', action: 'op_add', cls: 'operator' },
+      { label: '0', action: 'num0', cls: 'zero' }, { label: '.', action: 'dot', cls: '' }, { label: '=', action: 'equal', cls: 'equal' }
+    ];
+    for (let btn of buttons) {
+      const btnEl = document.createElement('button');
+      btnEl.className = `calc-key ${btn.cls}`;
+      btnEl.innerText = btn.label;
+      btnEl.onclick = () => {
+        if (btn.action === 'clear') clearCalc();
+        else if (btn.action === 'sign') toggleSign();
+        else if (btn.action === 'percent') percentCalc();
+        else if (btn.action === 'op_div') handleOperator('/');
+        else if (btn.action === 'op_mul') handleOperator('*');
+        else if (btn.action === 'op_sub') handleOperator('-');
+        else if (btn.action === 'op_add') handleOperator('+');
+        else if (btn.action === 'equal') computeResult();
+        else if (btn.action === 'dot') calcInputDecimal();
+        else if (btn.action.startsWith('num')) {
+          const digit = btn.label;
+          calcInputNumber(digit);
+        }
+      };
+      grid.appendChild(btnEl);
+    }
+    // zero span style not needed but ok
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/[&<>]/g, function(m) {
+      if (m === '&') return '&amp;';
+      if (m === '<') return '&lt;';
+      if (m === '>') return '&gt;';
+      return m;
+    });
+  }
+
+  // global key support for calculator but not interfering with chat input
+  document.addEventListener('keydown', (e) => {
+    const activeEl = document.activeElement;
+    if (activeEl && (activeEl.id === 'chatMessageInput' || activeEl.id === 'loginName' || activeEl.id === 'loginPass')) return;
+    const key = e.key;
+    if (/^[0-9]$/.test(key)) calcInputNumber(key);
+    else if (key === '.') calcInputDecimal();
+    else if (key === '+') handleOperator('+');
+    else if (key === '-') handleOperator('-');
+    else if (key === '*') handleOperator('*');
+    else if (key === '/') { e.preventDefault(); handleOperator('/'); }
+    else if (key === 'Enter' || key === '=') computeResult();
+    else if (key === 'Escape') clearCalc();
+    else if (key === '%') percentCalc();
+  });
+
+  buildCalculator();
+  updateCalcUI();
+
+  // initial load
+  window.onload = () => {
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+  };
 </script>
 </body>
 </html>
