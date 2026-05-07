@@ -1,680 +1,216 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Calculator</title>
-  
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-  
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Smart Calc</title>
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
-    body {
-      font-family: 'Courier New', 'SF Mono', monospace;
-      background: #000000;
-      height: 100vh;
-      width: 100vw;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-    }
+    <style>
+        :root {
+            --bg: #000000;
+            --panel: #1c1c1e;
+            --accent: #30d158;
+            --op: #ff9f0a;
+        }
 
-    .phone-calculator {
-      width: 100%;
-      max-width: 360px;
-      height: 620px;
-      background: #0f0f10;
-      border-radius: 32px;
-      overflow: hidden;
-      box-shadow: 0 25px 50px rgba(0,0,0,0.5);
-      display: flex;
-      flex-direction: column;
-      position: relative;
-    }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, sans-serif; }
+        body { background: var(--bg); height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
 
-    #loginScreen {
-      position: fixed;
-      inset: 0;
-      background: #121212;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 200;
-    }
+        /* Login Screen */
+        #loginScreen {
+            position: fixed; inset: 0; background: var(--bg); z-index: 1000;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .login-box { background: var(--panel); padding: 30px; border-radius: 25px; width: 300px; text-align: center; }
+        .login-box input { 
+            width: 100%; padding: 14px; margin: 8px 0; border-radius: 12px; border: none; 
+            background: #2c2c2e; color: white; text-align: center; outline: none;
+        }
+        .login-btn { 
+            width: 100%; padding: 14px; margin-top: 10px; border-radius: 12px; border: none; 
+            background: var(--accent); color: white; font-weight: bold; cursor: pointer;
+        }
 
-    .login-box {
-      background: #1c1c1e;
-      border-radius: 28px;
-      padding: 32px 24px;
-      width: 280px;
-      text-align: center;
-      border: 0.5px solid #2c2c2e;
-    }
+        /* Layout */
+        .container { width: 100%; max-width: 450px; height: 100vh; display: flex; flex-direction: column; }
 
-    .login-box h2 {
-      color: #e5e5e5;
-      font-size: 14px;
-      font-weight: 500;
-      letter-spacing: 2px;
-      margin-bottom: 24px;
-      opacity: 0.7;
-    }
+        /* Chat Part (Upper Half) */
+        .chat-area { flex: 1; display: flex; flex-direction: column; background: #000; overflow: hidden; }
+        .chat-header { padding: 12px 18px; background: #121212; display: flex; justify-content: space-between; align-items: center; border-bottom: 0.5px solid #222; }
+        .chat-header span { color: var(--accent); font-size: 11px; font-weight: bold; text-transform: uppercase; }
+        .exit-btn { color: #ff453a; font-size: 11px; font-weight: bold; cursor: pointer; background: none; border: none; }
 
-    .login-box input {
-      width: 100%;
-      background: #0e0e0e;
-      border: 0.5px solid #3a3a3c;
-      border-radius: 14px;
-      color: #f0f0f0;
-      font-family: 'Courier New', monospace;
-      font-size: 15px;
-      padding: 12px 16px;
-      margin-bottom: 12px;
-      outline: none;
-      text-align: center;
-    }
+        #msgContainer { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; }
+        .bubble { max-width: 80%; padding: 10px 14px; border-radius: 18px; font-size: 14px; animation: pop 0.2s ease; }
+        .sent { align-self: flex-end; background: #264a33; color: white; border-bottom-right-radius: 2px; }
+        .recv { align-self: flex-start; background: #2c2c2e; color: white; border-bottom-left-radius: 2px; }
 
-    .login-btn {
-      width: 100%;
-      background: #2c2c2e;
-      border: none;
-      border-radius: 14px;
-      color: #e5e5e5;
-      font-family: 'Courier New', monospace;
-      font-size: 15px;
-      padding: 12px;
-      margin-top: 8px;
-      cursor: pointer;
-      font-weight: 600;
-    }
+        .chat-input { padding: 10px; background: #121212; display: flex; gap: 10px; border-top: 0.5px solid #222; }
+        .chat-input input { flex: 1; background: #2c2c2e; border: none; padding: 10px 15px; border-radius: 20px; color: white; outline: none; }
 
-    .login-btn:active { background: #3a3a3c; transform: scale(0.97); }
-    #loginErr { color: #ff6b6b; font-size: 11px; margin-top: 12px; }
+        /* Calculator Part (Lower Half) */
+        .calc-area { height: 380px; background: #000; display: flex; flex-direction: column; }
+        .calc-display { padding: 20px; text-align: right; color: white; font-size: 48px; font-weight: 300; min-height: 90px; }
+        .calc-grid { flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: #333; }
+        .btn { background: #1c1c1e; border: none; color: white; font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .btn:active { background: #3a3a3c; }
+        .op { color: var(--op); }
 
-    .chat-area {
-      flex: 1;
-      background: #0a0a0c;
-      display: flex;
-      flex-direction: column;
-      border-bottom: 1px solid #222226;
-      overflow: hidden;
-      min-height: 0;
-    }
-
-    .chat-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 16px;
-      background: #121214;
-      border-bottom: 0.5px solid #252529;
-    }
-
-    .user-badge { display: flex; align-items: center; gap: 7px; }
-    .status-led { width: 7px; height: 7px; background: #34c759; border-radius: 50%; }
-    .user-name { color: #8e8e93; font-size: 12px; letter-spacing: 0.5px; }
-    .exit-chat { background: none; border: none; color: #636366; font-size: 11px; font-family: monospace; padding: 4px 8px; cursor: pointer; border-radius: 20px; }
-
-    .messages-container {
-      flex: 1;
-      overflow-y: auto;
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      scrollbar-width: thin;
-    }
-
-    .bubble {
-      max-width: 80%;
-      padding: 8px 12px;
-      border-radius: 18px;
-      font-size: 12px;
-      line-height: 1.35;
-      word-break: break-word;
-      font-family: 'Courier New', monospace;
-      background: #1c1c1e;
-      color: #e9e9ef;
-      animation: fadeInMsg 0.2s ease;
-      position: relative;
-    }
-
-    @keyframes fadeInMsg { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes vanishFade { 0% { opacity: 1; } 100% { opacity: 0; transform: scale(0.9); display: none; } }
-
-    .bubble.sent { background: #2a4438; color: #d4f5e2; align-self: flex-end; border-bottom-right-radius: 4px; }
-    .bubble.recv { background: #1f1f24; color: #dddfe8; align-self: flex-start; border-bottom-left-radius: 4px; }
-    .vanishing-bubble { animation: vanishFade 0.45s ease forwards; }
-    .msg-meta { font-size: 9px; opacity: 0.5; margin-top: 4px; }
-
-    .chat-input-area {
-      display: flex;
-      padding: 8px 12px 12px;
-      gap: 8px;
-      background: #0f0f10;
-      border-top: 0.5px solid #222226;
-    }
-
-    .chat-input-area input {
-      flex: 1;
-      background: #19191c;
-      border: 0.5px solid #2e2e32;
-      border-radius: 28px;
-      color: #f2f2f6;
-      font-family: 'Courier New', monospace;
-      font-size: 12px;
-      padding: 10px 15px;
-      outline: none;
-    }
-
-    .chat-send { background: #2a4438; width: 40px; border-radius: 30px; border: none; color: #cef2de; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-    .chat-send:active { background: #3e5e4e; transform: scale(0.94); }
-    .other-hint { font-size: 9px; text-align: center; color: #3a3a3c; margin-bottom: 6px; }
-
-    .calc-section {
-      height: 280px;
-      background: #111112;
-      display: flex;
-      flex-direction: column;
-      border-top: 1px solid #232327;
-    }
-
-    .calc-display { background: #08080a; padding: 16px 18px; text-align: right; border-bottom: 0.5px solid #222; }
-    .calc-expression { color: #6c6c70; font-size: 11px; min-height: 16px; }
-    .calc-result { color: #f5f5f7; font-size: 34px; font-weight: 600; font-family: monospace; }
-
-    .calc-buttons {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 1px;
-      flex: 1;
-      background: #1a1a1c;
-      padding: 1px;
-    }
-
-    .calc-key {
-      background: #1e1e22;
-      border: none;
-      color: #e3e3e8;
-      font-family: 'Courier New', monospace;
-      font-size: 20px;
-      font-weight: 500;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: 0.05s linear;
-    }
-    .calc-key:active { background: #34343a; transform: scale(0.96); }
-    .calc-key.operator { background: #25232a; color: #ff9f4a; }
-    .calc-key.equal { background: #2a4438; color: #b0f0c8; }
-    .calc-key.clear { background: #322022; color: #ff8989; }
-  </style>
+        @keyframes pop { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+    </style>
 </head>
 <body>
 
 <div id="loginScreen">
-  <div class="login-box">
-    <h2>█ CALCULATOR █</h2>
-    <input type="text" id="loginName" placeholder="username" autocomplete="off">
-    <input type="password" id="loginPass" placeholder="password" autocomplete="off">
-    <button class="login-btn" onclick="attemptLogin()">UNLOCK</button>
-    <div id="loginErr"></div>
-  </div>
+    <div class="login-box">
+        <h2 style="color: white; margin-bottom: 20px;">Calculator</h2>
+        <input type="text" id="user" placeholder="Name">
+        <input type="password" id="pass" placeholder="Password">
+        <button class="login-btn" onclick="doLogin()">Unlock</button>
+        <p id="err" style="color: #ff453a; font-size: 12px; margin-top: 10px;"></p>
+    </div>
 </div>
 
-<div class="phone-calculator" id="app" style="display: none;">
-  <div class="chat-area">
-    <div class="chat-header">
-      <div class="user-badge">
-        <div class="status-led"></div>
-        <div class="user-name" id="displayCurrentUser">nil</div>
-      </div>
-      <button class="exit-chat" onclick="performExit()">✕ EXIT</button>
+<div class="container" id="app" style="display: none;">
+    <div class="chat-area">
+        <div class="chat-header">
+            <span id="who">User: nil</span>
+            <button class="exit-btn" onclick="doExit()">EXIT & WIPE</button>
+        </div>
+        <div id="msgContainer"></div>
+        <div class="chat-input">
+            <input type="text" id="msgIn" placeholder="Type message...">
+            <button onclick="sendMsg()" style="background: none; border: none; color: var(--accent); font-weight: bold;">SEND</button>
+        </div>
     </div>
-    <div class="messages-container" id="messagesContainer">
-      <div class="other-hint" id="otherHint"></div>
-    </div>
-    <div class="chat-input-area">
-      <input type="text" id="chatMessageInput" placeholder="type..." maxlength="180" autocomplete="off">
-      <button class="chat-send" onclick="sendMessage()">↵</button>
-    </div>
-  </div>
 
-  <div class="calc-section">
-    <div class="calc-display">
-      <div class="calc-expression" id="calcExpression"></div>
-      <div class="calc-result" id="calcResultDisplay">0</div>
+    <div class="calc-area">
+        <div class="calc-display" id="disp">0</div>
+        <div class="calc-grid">
+            <button class="btn op" onclick="cClear()">C</button>
+            <button class="btn op">+/-</button>
+            <button class="btn op">%</button>
+            <button class="btn op" onclick="cOp('/')">÷</button>
+            <button class="btn" onclick="cNum('7')">7</button>
+            <button class="btn" onclick="cNum('8')">8</button>
+            <button class="btn" onclick="cNum('9')">9</button>
+            <button class="btn op" onclick="cOp('*')">×</button>
+            <button class="btn" onclick="cNum('4')">4</button>
+            <button class="btn" onclick="cNum('5')">5</button>
+            <button class="btn" onclick="cNum('6')">6</button>
+            <button class="btn op" onclick="cOp('-')">−</button>
+            <button class="btn" onclick="cNum('1')">1</button>
+            <button class="btn" onclick="cNum('2')">2</button>
+            <button class="btn" onclick="cNum('3')">3</button>
+            <button class="btn op" onclick="cOp('+')">+</button>
+            <button class="btn" style="grid-column: span 2;" onclick="cNum('0')">0</button>
+            <button class="btn" onclick="cNum('.')">.</button>
+            <button class="btn op" style="background: var(--op); color: white;" onclick="cEqual()">=</button>
+        </div>
     </div>
-    <div class="calc-buttons" id="calcGrid"></div>
-  </div>
 </div>
 
 <script>
-  // ========== FIREBASE CONFIG (YOUR CONFIG) ==========
-  const firebaseConfig = {
-    apiKey: "AIzaSyAULIbWFH3f5dojXoaFYgdacp1Vl7F4nuQ",
-    authDomain: "calc-34b58.firebaseapp.com",
-    projectId: "calc-34b58",
-    storageBucket: "calc-34b58.firebasestorage.app",
-    messagingSenderId: "882053838693",
-    appId: "1:882053838693:web:5098cdac4f65b583f9d38c"
-  };
-
-  // Initialize Firebase
-  let database = null;
-  let isFirebaseReady = false;
-  
-  try {
-    const app = firebase.initializeApp(firebaseConfig);
-    database = firebase.database(app);
-    isFirebaseReady = true;
-    console.log("✅ Firebase connected successfully!");
-  } catch(e) {
-    console.error("Firebase init error:", e);
-    isFirebaseReady = false;
-  }
-  
-  // ========== AUTH ==========
-  const USERS = { 'nil': '143', 'hi': '143' };
-  let currentUser = null;
-  let otherUser = null;
-  let isUserActive = true;
-  let deleteTimeouts = {};
-  
-  // DOM elements
-  const messagesDiv = document.getElementById('messagesContainer');
-  const otherHintSpan = document.getElementById('otherHint');
-  const chatInput = document.getElementById('chatMessageInput');
-  
-  // Send message to Firebase
-  function sendMessageToFirebase(text) {
-    if (!isFirebaseReady || !currentUser) {
-      alert("Connecting to server... Please wait.");
-      return false;
-    }
-    
-    const msgRef = database.ref('messages').push();
-    const message = {
-      id: msgRef.key,
-      sender: currentUser,
-      text: text,
-      timestamp: Date.now(),
-      seen: false,
-      seenAt: null
+    // Firebase Config using your Database URL
+    const config = {
+        apiKey: "AIzaSyAULIbWFH3f5dojXoaFYgdacp1Vl7F4nuQ",
+        authDomain: "calc-34b58.firebaseapp.com",
+        databaseURL: "https://calc-34b58-default-rtdb.firebaseio.com",
+        projectId: "calc-34b58",
+        storageBucket: "calc-34b58.firebasestorage.app",
+        messagingSenderId: "882053838693",
+        appId: "1:882053838693:web:5098cdac4f65b583f9d38c"
     };
-    
-    msgRef.set(message);
-    return true;
-  }
-  
-  // Mark message as seen
-  function markMessageSeen(msgId) {
-    if (!isFirebaseReady || !currentUser) return;
-    
-    const msgRef = database.ref('messages/' + msgId);
-    msgRef.once('value', (snapshot) => {
-      const msg = snapshot.val();
-      if (msg && !msg.seen && msg.sender !== currentUser) {
-        msgRef.update({ 
-          seen: true, 
-          seenAt: Date.now()
+
+    firebase.initializeApp(config);
+    const db = firebase.database();
+    let me = "";
+
+    // Auth
+    function doLogin() {
+        const u = document.getElementById('user').value.toLowerCase();
+        const p = document.getElementById('pass').value;
+        if((u === "nil" && p === "143") || (u === "hi" && p === "143")) {
+            me = u;
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('app').style.display = 'flex';
+            document.getElementById('who').innerText = `User: ${u}`;
+            loadChat();
+        } else {
+            document.getElementById('err').innerText = "Access Denied";
+        }
+    }
+
+    // Chat
+    function loadChat() {
+        db.ref('messages').on('value', (snap) => {
+            const cont = document.getElementById('msgContainer');
+            cont.innerHTML = "";
+            const msgs = snap.val();
+            if(msgs) {
+                Object.keys(msgs).forEach(id => {
+                    const m = msgs[id];
+                    const d = document.createElement('div');
+                    d.className = `bubble ${m.s === me ? 'sent' : 'recv'}`;
+                    d.innerText = m.t;
+                    cont.appendChild(d);
+
+                    // Auto-delete seen messages after 5s
+                    if(m.s !== me && !m.v) {
+                        db.ref('messages/' + id).update({ v: true });
+                        setTimeout(() => db.ref('messages/' + id).remove(), 5000);
+                    }
+                });
+                cont.scrollTop = cont.scrollHeight;
+            }
         });
-      }
-    });
-  }
-  
-  // Delete message from Firebase with animation
-  function deleteMessageFromFirebase(msgId) {
-    if (!isFirebaseReady) return;
-    
-    // Clear any existing timeout
-    if (deleteTimeouts[msgId]) {
-      clearTimeout(deleteTimeouts[msgId]);
-      delete deleteTimeouts[msgId];
     }
-    
-    // Animate removal from DOM
-    const msgElement = document.getElementById(`msg_${msgId}`);
-    if (msgElement) {
-      msgElement.classList.add('vanishing-bubble');
-      msgElement.addEventListener('animationend', () => {
-        if (msgElement.parentNode) msgElement.remove();
-      });
+
+    function sendMsg() {
+        const inp = document.getElementById('msgIn');
+        if(!inp.value.trim()) return;
+        db.ref('messages').push({ s: me, t: inp.value, v: false });
+        inp.value = "";
     }
-    
-    // Delete from Firebase
-    database.ref('messages/' + msgId).remove();
-  }
-  
-  // Schedule deletion after seen
-  function scheduleDeletionAfterSeen(msgId, seenAt) {
-    if (deleteTimeouts[msgId]) clearTimeout(deleteTimeouts[msgId]);
-    
-    const elapsed = Date.now() - seenAt;
-    const remaining = Math.max(0, 5000 - elapsed);
-    
-    deleteTimeouts[msgId] = setTimeout(() => {
-      deleteMessageFromFirebase(msgId);
-    }, remaining);
-  }
-  
-  // Listen for messages from Firebase
-  function listenForMessages() {
-    if (!isFirebaseReady || !currentUser) return;
-    
-    database.ref('messages').on('value', (snapshot) => {
-      const messages = snapshot.val();
-      if (!messages) return;
-      
-      // Convert to array and sort by timestamp
-      const msgArray = Object.values(messages);
-      msgArray.sort((a,b) => a.timestamp - b.timestamp);
-      
-      // Render messages
-      renderMessagesFromFirebase(msgArray);
-      
-      // Mark unseen messages as seen (if user is active and viewing)
-      if (isUserActive) {
-        for (let msg of msgArray) {
-          if (msg.sender !== currentUser && !msg.seen) {
-            markMessageSeen(msg.id);
-          }
-        }
-      }
-      
-      // Handle deletion for seen messages
-      for (let msg of msgArray) {
-        if (msg.seen && msg.sender !== currentUser) {
-          scheduleDeletionAfterSeen(msg.id, msg.seenAt);
-        }
-      }
-    });
-  }
-  
-  // Render messages from Firebase
-  function renderMessagesFromFirebase(messages) {
-    if (!messagesDiv) return;
-    
-    // Save current scroll position
-    const wasAtBottom = messagesDiv.scrollHeight - messagesDiv.scrollTop <= 100;
-    
-    // Clear except hint
-    const children = [...messagesDiv.children];
-    for (let child of children) {
-      if (child !== otherHintSpan) child.remove();
-    }
-    
-    for (let msg of messages) {
-      const isMine = (msg.sender === currentUser);
-      const msgDiv = document.createElement('div');
-      msgDiv.className = `bubble ${isMine ? 'sent' : 'recv'}`;
-      msgDiv.id = `msg_${msg.id}`;
-      
-      const senderLabel = isMine ? 'you' : msg.sender;
-      const timeStr = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute:'2-digit' });
-      const seenBadge = (!isMine && msg.seen) ? ' ✓✓' : '';
-      
-      msgDiv.innerHTML = `
-        <div>${escapeHtml(msg.text)}</div>
-        <div class="msg-meta">${senderLabel} • ${timeStr}${seenBadge}</div>
-      `;
-      
-      // Don't re-add if already vanishing
-      if (!msgDiv.classList.contains('vanishing-bubble')) {
-        messagesDiv.appendChild(msgDiv);
-      }
-    }
-    
-    // Auto-scroll to bottom if was at bottom
-    if (wasAtBottom) {
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    }
-  }
-  
-  // Send message handler
-  function sendMessage() {
-    if (!currentUser || !isUserActive) return;
-    const text = chatInput.value.trim();
-    if (!text) return;
-    chatInput.value = '';
-    
-    if (isFirebaseReady) {
-      sendMessageToFirebase(text);
-    } else {
-      alert("⚠️ Connecting to server... Please wait or refresh.");
-    }
-  }
-  
-  // Exit handler - delete all current user's messages immediately
-  function performExit() {
-    if (!currentUser) {
-      // Simple logout
-      currentUser = null;
-      document.getElementById('loginScreen').style.display = 'flex';
-      document.getElementById('app').style.display = 'none';
-      return;
-    }
-    
-    isUserActive = false;
-    
-    // Delete all messages sent by current user immediately
-    if (isFirebaseReady) {
-      database.ref('messages').once('value', (snapshot) => {
-        const messages = snapshot.val();
-        if (messages) {
-          for (let [id, msg] of Object.entries(messages)) {
-            if (msg.sender === currentUser) {
-              // Animate deletion
-              const msgElement = document.getElementById(`msg_${id}`);
-              if (msgElement) {
-                msgElement.classList.add('vanishing-bubble');
-              }
-              database.ref('messages/' + id).remove();
+
+    function doExit() {
+        // Wipe my messages and reload
+        db.ref('messages').once('value', (snap) => {
+            const data = snap.val();
+            if(data) {
+                Object.keys(data).forEach(id => {
+                    if(data[id].s === me) db.ref('messages/' + id).remove();
+                });
             }
-          }
-        }
-      });
+            location.reload();
+        });
     }
-    
-    currentUser = null;
-    document.getElementById('loginScreen').style.display = 'flex';
-    document.getElementById('app').style.display = 'none';
-    document.getElementById('loginName').value = '';
-    document.getElementById('loginPass').value = '';
-    
-    // Clear messages container
-    if (messagesDiv) {
-      const kids = [...messagesDiv.children];
-      for (let kid of kids) {
-        if (kid !== otherHintSpan) kid.remove();
-      }
+
+    // Calc Logic
+    let val = "0", op = null, prev = null, wait = false;
+    function dUp() { document.getElementById('disp').innerText = val; }
+    function cNum(n) {
+        if(wait) { val = n; wait = false; }
+        else val = val === "0" ? n : val + n;
+        dUp();
     }
-  }
-  
-  // Login function
-  function attemptLogin() {
-    const name = document.getElementById('loginName').value.trim().toLowerCase();
-    const pass = document.getElementById('loginPass').value.trim();
-    
-    if (USERS[name] && USERS[name] === pass) {
-      currentUser = name;
-      otherUser = (name === 'nil') ? 'hi' : 'nil';
-      isUserActive = true;
-      
-      document.getElementById('displayCurrentUser').innerText = currentUser;
-      otherHintSpan.innerHTML = `◈ ${otherUser} online ◈`;
-      
-      document.getElementById('loginScreen').style.display = 'none';
-      document.getElementById('app').style.display = 'flex';
-      chatInput.focus();
-      
-      if (isFirebaseReady) {
-        listenForMessages();
-      } else {
-        const errDiv = document.getElementById('loginErr');
-        if (errDiv) errDiv.innerText = "⚠️ Firebase connecting...";
-        setTimeout(() => {
-          if (isFirebaseReady) {
-            listenForMessages();
-            if (errDiv) errDiv.innerText = "";
-          }
-        }, 2000);
-      }
-    } else {
-      document.getElementById('loginErr').innerText = '❌ Invalid credentials (nil/143 or hi/143)';
-      setTimeout(() => document.getElementById('loginErr').innerText = '', 2000);
+    function cOp(o) { prev = parseFloat(val); op = o; wait = true; }
+    function cEqual() {
+        if(!op) return;
+        const cur = parseFloat(val);
+        if(op === '+') val = (prev + cur).toString();
+        if(op === '-') val = (prev - cur).toString();
+        if(op === '*') val = (prev * cur).toString();
+        if(op === '/') val = (prev / cur).toString();
+        op = null; wait = true; dUp();
     }
-  }
-  
-  function escapeHtml(t) {
-    return t.replace(/[&<>]/g, function(m) {
-      if (m === '&') return '&amp;';
-      if (m === '<') return '&lt;';
-      if (m === '>') return '&gt;';
-      return m;
-    });
-  }
-  
-  // Enter key handlers
-  chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendMessage(); });
-  document.getElementById('loginPass').addEventListener('keydown', (e) => { if (e.key === 'Enter') attemptLogin(); });
-  
-  // Focus marks messages as seen
-  chatInput.addEventListener('focus', () => {
-    if (currentUser && isUserActive && isFirebaseReady) {
-      database.ref('messages').once('value', (snapshot) => {
-        const msgs = snapshot.val();
-        if (msgs) {
-          for (let [id, msg] of Object.entries(msgs)) {
-            if (msg.sender !== currentUser && !msg.seen) {
-              markMessageSeen(id);
-            }
-          }
-        }
-      });
-    }
-  });
-  
-  // ========== CALCULATOR (Fully Functional) ==========
-  let calc = { display: "0", prev: null, op: null, waitOperand: false, expr: "" };
-  
-  function updateCalc() {
-    document.getElementById('calcResultDisplay').innerText = calc.display;
-    document.getElementById('calcExpression').innerText = calc.expr;
-  }
-  
-  function numClick(n) {
-    if (calc.waitOperand) { calc.display = n; calc.waitOperand = false; }
-    else { calc.display = calc.display === "0" ? n : calc.display + n; }
-    updateCalc();
-  }
-  
-  function dotClick() {
-    if (calc.waitOperand) { calc.display = "0."; calc.waitOperand = false; }
-    else if (!calc.display.includes(".")) { calc.display += "."; }
-    updateCalc();
-  }
-  
-  function opClick(op) {
-    const val = parseFloat(calc.display);
-    if (calc.prev !== null && calc.op && !calc.waitOperand) {
-      let res = compute(calc.prev, val, calc.op);
-      calc.display = String(res);
-      calc.prev = res;
-    } else { calc.prev = val; }
-    calc.op = op;
-    calc.waitOperand = true;
-    calc.expr = `${calc.prev} ${op === '*' ? '×' : op === '/' ? '÷' : op}`;
-    updateCalc();
-  }
-  
-  function compute(a,b,op) {
-    switch(op) {
-      case '+': return a+b;
-      case '-': return a-b;
-      case '*': return a*b;
-      case '/': return b !== 0 ? a/b : 0;
-      default: return b;
-    }
-  }
-  
-  function equalClick() {
-    if (calc.op === null || calc.waitOperand) return;
-    const second = parseFloat(calc.display);
-    const res = compute(calc.prev, second, calc.op);
-    calc.expr = `${calc.prev} ${calc.op === '*' ? '×' : calc.op === '/' ? '÷' : calc.op} ${second} =`;
-    calc.display = String(res);
-    calc.prev = null;
-    calc.op = null;
-    calc.waitOperand = true;
-    updateCalc();
-  }
-  
-  function clearCalc() { calc = { display: "0", prev: null, op: null, waitOperand: false, expr: "" }; updateCalc(); }
-  function signClick() { calc.display = String(parseFloat(calc.display) * -1); updateCalc(); }
-  function percentClick() { calc.display = String(parseFloat(calc.display) / 100); updateCalc(); }
-  
-  function buildCalcButtons() {
-    const grid = document.getElementById('calcGrid');
-    if (!grid) return;
-    grid.innerHTML = '';
-    const btns = [
-      { label: 'C', act: 'clear', cls: 'clear' }, { label: '+/-', act: 'sign', cls: 'operator' }, { label: '%', act: 'percent', cls: 'operator' }, { label: '÷', act: 'div', cls: 'operator' },
-      { label: '7', act: '7', cls: '' }, { label: '8', act: '8', cls: '' }, { label: '9', act: '9', cls: '' }, { label: '×', act: 'mul', cls: 'operator' },
-      { label: '4', act: '4', cls: '' }, { label: '5', act: '5', cls: '' }, { label: '6', act: '6', cls: '' }, { label: '−', act: 'sub', cls: 'operator' },
-      { label: '1', act: '1', cls: '' }, { label: '2', act: '2', cls: '' }, { label: '3', act: '3', cls: '' }, { label: '+', act: 'add', cls: 'operator' },
-      { label: '0', act: '0', cls: '' }, { label: '.', act: 'dot', cls: '' }, { label: '=', act: 'equal', cls: 'equal' }
-    ];
-    
-    for (let b of btns) {
-      const btn = document.createElement('button');
-      btn.className = `calc-key ${b.cls}`;
-      btn.innerText = b.label;
-      btn.onclick = () => {
-        if (b.act === 'clear') clearCalc();
-        else if (b.act === 'sign') signClick();
-        else if (b.act === 'percent') percentClick();
-        else if (b.act === 'div') opClick('/');
-        else if (b.act === 'mul') opClick('*');
-        else if (b.act === 'sub') opClick('-');
-        else if (b.act === 'add') opClick('+');
-        else if (b.act === 'equal') equalClick();
-        else if (b.act === 'dot') dotClick();
-        else if (!isNaN(b.act)) numClick(b.act);
-      };
-      grid.appendChild(btn);
-    }
-  }
-  
-  // Keyboard support for calculator
-  document.addEventListener('keydown', (e) => {
-    const active = document.activeElement;
-    if (active && (active.id === 'chatMessageInput' || active.id === 'loginName' || active.id === 'loginPass')) return;
-    const key = e.key;
-    if (/^[0-9]$/.test(key)) numClick(key);
-    else if (key === '.') dotClick();
-    else if (key === '+') opClick('+');
-    else if (key === '-') opClick('-');
-    else if (key === '*') opClick('*');
-    else if (key === '/') { e.preventDefault(); opClick('/'); }
-    else if (key === 'Enter' || key === '=') equalClick();
-    else if (key === 'Escape') clearCalc();
-    else if (key === '%') percentClick();
-  });
-  
-  buildCalcButtons();
-  updateCalc();
-  
-  console.log("✅ App ready! Firebase:", isFirebaseReady);
+    function cClear() { val = "0"; op = null; prev = null; wait = false; dUp(); }
+
+    document.getElementById('msgIn').addEventListener('keypress', (e) => { if(e.key === 'Enter') sendMsg(); });
 </script>
 </body>
 </html>
