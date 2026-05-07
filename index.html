@@ -9,23 +9,34 @@
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-      user-select: none; /* subtle: makes it feel like a kiosk/calc, but text input still works */
     }
 
     body {
       font-family: 'Courier New', 'SF Mono', monospace;
-      background: #000000; /* deep black for seamless phone integration */
+      background: #000000;
       height: 100vh;
       width: 100vw;
       display: flex;
       align-items: center;
       justify-content: center;
       overflow: hidden;
-      position: fixed;
-      touch-action: pan-x pan-y; /* safe */
     }
 
-    /* LOGIN SCREEN - minimalist, looks like a calculator access code */
+    /* MAIN CALCULATOR CONTAINER - phone calculator size */
+    .phone-calculator {
+      width: 100%;
+      max-width: 360px;
+      height: 600px;
+      background: #0f0f10;
+      border-radius: 32px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* LOGIN SCREEN */
     #loginScreen {
       position: fixed;
       inset: 0;
@@ -34,7 +45,6 @@
       align-items: center;
       justify-content: center;
       z-index: 200;
-      backdrop-filter: blur(0px);
     }
 
     .login-box {
@@ -44,7 +54,6 @@
       width: 280px;
       text-align: center;
       border: 0.5px solid #2c2c2e;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
     }
 
     .login-box h2 {
@@ -54,7 +63,6 @@
       letter-spacing: 2px;
       margin-bottom: 24px;
       opacity: 0.7;
-      font-family: monospace;
     }
 
     .login-box input {
@@ -71,11 +79,6 @@
       text-align: center;
     }
 
-    .login-box input:focus {
-      border-color: #6e6e72;
-      background: #141416;
-    }
-
     .login-btn {
       width: 100%;
       background: #2c2c2e;
@@ -88,7 +91,6 @@
       margin-top: 8px;
       cursor: pointer;
       font-weight: 600;
-      transition: 0.1s linear;
     }
 
     .login-btn:active {
@@ -100,32 +102,19 @@
       color: #ff6b6b;
       font-size: 11px;
       margin-top: 12px;
-      min-height: 18px;
     }
 
-    /* MAIN APP (CALCULATOR SHELL) - full phone size, looks like advanced calc */
-    #app {
-      display: none;
-      width: 100%;
-      height: 100%;
-      background: #0f0f10;
-      flex-direction: column;
-      position: relative;
-      overflow: hidden;
-    }
-
-    /* CHAT AREA (UPPER HALF) — hidden in plain sight */
-    .chat-zone {
+    /* CHAT AREA (TOP HALF - but hidden like calculator's top section) */
+    .chat-area {
       flex: 1;
       background: #0a0a0c;
       display: flex;
       flex-direction: column;
       border-bottom: 1px solid #222226;
       overflow: hidden;
-      position: relative;
+      min-height: 0;
     }
 
-    /* tiny header like a status bar */
     .chat-header {
       display: flex;
       align-items: center;
@@ -153,7 +142,6 @@
       color: #8e8e93;
       font-size: 12px;
       letter-spacing: 0.5px;
-      font-weight: 500;
     }
 
     .exit-chat {
@@ -167,15 +155,10 @@
       border-radius: 20px;
     }
 
-    .exit-chat:active {
-      background: #242426;
-    }
-
-    /* message container */
     .messages-container {
       flex: 1;
       overflow-y: auto;
-      padding: 12px 12px 8px 12px;
+      padding: 12px;
       display: flex;
       flex-direction: column;
       gap: 8px;
@@ -187,17 +170,22 @@
     }
 
     .bubble {
-      max-width: 78%;
+      max-width: 80%;
       padding: 8px 12px;
       border-radius: 18px;
-      font-size: 13px;
+      font-size: 12px;
       line-height: 1.35;
       word-break: break-word;
       font-family: 'Courier New', monospace;
       background: #1c1c1e;
       color: #e9e9ef;
-      transition: opacity 0.2s ease;
-      box-shadow: 0 1px 1px rgba(0,0,0,0.2);
+      animation: fadeInMsg 0.2s ease;
+      position: relative;
+    }
+
+    @keyframes fadeInMsg {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     .bubble.sent {
@@ -214,13 +202,23 @@
       border-bottom-left-radius: 4px;
     }
 
+    .bubble.recv.seen-badge::after {
+      content: "✓✓ seen";
+      position: absolute;
+      bottom: -14px;
+      right: 0;
+      font-size: 8px;
+      color: #34c759;
+      opacity: 0.7;
+    }
+
     .vanishing-bubble {
       animation: vanishFade 0.45s ease forwards;
     }
 
     @keyframes vanishFade {
       0% { opacity: 1; transform: scale(1);}
-      100% { opacity: 0; transform: scale(0.92); display: none; }
+      100% { opacity: 0; transform: scale(0.9); display: none; }
     }
 
     .msg-meta {
@@ -232,7 +230,7 @@
 
     .chat-input-area {
       display: flex;
-      padding: 8px 12px 12px 12px;
+      padding: 8px 12px 12px;
       gap: 8px;
       background: #0f0f10;
       border-top: 0.5px solid #222226;
@@ -245,14 +243,9 @@
       border-radius: 28px;
       color: #f2f2f6;
       font-family: 'Courier New', monospace;
-      font-size: 13px;
+      font-size: 12px;
       padding: 10px 15px;
       outline: none;
-    }
-
-    .chat-input-area input::placeholder {
-      color: #4a4a4e;
-      font-size: 11px;
     }
 
     .chat-send {
@@ -266,7 +259,6 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: 0.1s;
     }
 
     .chat-send:active {
@@ -274,18 +266,15 @@
       transform: scale(0.94);
     }
 
-    /* OTHER USER tiny hint (looks like a debug label) */
     .other-hint {
       font-size: 9px;
       text-align: center;
       color: #3a3a3c;
-      margin-top: 3px;
-      margin-bottom: 4px;
-      letter-spacing: 0.3px;
+      margin-bottom: 6px;
     }
 
-    /* CALCULATOR SECTION (lower half) — rich and fully working */
-    .calc-panel {
+    /* CALCULATOR SECTION (BOTTOM HALF) - like normal calculator */
+    .calc-section {
       height: 280px;
       background: #111112;
       display: flex;
@@ -293,17 +282,17 @@
       border-top: 1px solid #232327;
     }
 
-    .calc-screen {
+    .calc-display {
       background: #08080a;
-      padding: 12px 18px;
+      padding: 16px 18px;
       text-align: right;
       border-bottom: 0.5px solid #222;
     }
 
-    .calc-expr {
+    .calc-expression {
       color: #6c6c70;
-      font-size: 12px;
-      min-height: 18px;
+      font-size: 11px;
+      min-height: 16px;
       font-family: monospace;
     }
 
@@ -313,13 +302,12 @@
       font-weight: 600;
       font-family: monospace;
       word-break: break-word;
-      letter-spacing: 1px;
     }
 
     .calc-buttons {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 0.5px;
+      gap: 1px;
       flex: 1;
       background: #1a1a1c;
       padding: 1px;
@@ -358,376 +346,384 @@
       background: #322022;
       color: #ff8989;
     }
-
-    /* phone fullscreen perfection */
-    @media (max-width: 480px) {
-      .bubble {
-        font-size: 12px;
-        padding: 7px 11px;
-      }
-      .calc-result {
-        font-size: 28px;
-      }
-    }
-
-    /* no tell-tale signs */
-    .chat-header .user-name span {
-      font-size: 12px;
-    }
   </style>
 </head>
 <body>
 
-<!-- LOGIN overlay -->
 <div id="loginScreen">
   <div class="login-box">
-    <h2>█ CALCULATOR v5.2 █</h2>
-    <input type="text" id="loginName" placeholder="user id" autocomplete="off" spellcheck="false">
-    <input type="password" id="loginPass" placeholder="pin" autocomplete="off">
+    <h2>█ CALCULATOR █</h2>
+    <input type="text" id="loginName" placeholder="username" autocomplete="off">
+    <input type="password" id="loginPass" placeholder="password" autocomplete="off">
     <button class="login-btn" onclick="attemptLogin()">UNLOCK</button>
     <div id="loginErr"></div>
   </div>
 </div>
 
-<!-- MAIN APP / CALCULATOR INTERFACE with hidden chat -->
-<div id="app">
-  <!-- upper half: disguised chat -->
-  <div class="chat-zone">
+<div class="phone-calculator" id="app" style="display: none;">
+  <div class="chat-area">
     <div class="chat-header">
       <div class="user-badge">
         <div class="status-led"></div>
         <div class="user-name" id="displayCurrentUser">nil</div>
       </div>
-      <button class="exit-chat" onclick="performLogout()">⟳ EXIT</button>
+      <button class="exit-chat" onclick="performExit()">✕ EXIT</button>
     </div>
     <div class="messages-container" id="messagesContainer">
       <div class="other-hint" id="otherHint"></div>
     </div>
     <div class="chat-input-area">
       <input type="text" id="chatMessageInput" placeholder="type..." maxlength="180" autocomplete="off">
-      <button class="chat-send" onclick="dispatchMessage()">↵</button>
+      <button class="chat-send" onclick="sendMessage()">↵</button>
     </div>
   </div>
 
-  <!-- lower half: full calculator logic, realistic -->
-  <div class="calc-panel">
-    <div class="calc-screen">
-      <div class="calc-expr" id="calcExpression"></div>
+  <div class="calc-section">
+    <div class="calc-display">
+      <div class="calc-expression" id="calcExpression"></div>
       <div class="calc-result" id="calcResultDisplay">0</div>
     </div>
-    <div class="calc-buttons" id="calcGrid">
-      <!-- dynamic but static built -->
-    </div>
+    <div class="calc-buttons" id="calcGrid"></div>
   </div>
 </div>
 
 <script>
-  // ---------- AUTHENTICATION ----------
-  const ALLOWED_CRED = {
-    'nil': '143',
-    'hi': '143'
-  };
+  // ========== AUTH ==========
+  const USERS = { 'nil': '143', 'hi': '143' };
+  let currentUser = null;
+  let otherUser = null;
+  let isUserActive = true; // user is in chat (not exited)
 
-  let currentSessionUser = null;      // 'nil' or 'hi'
-  let otherPeer = null;               // the conversation partner
-
-  // ---------- Message storage with auto vanish (5 sec) ----------
-  // We'll store messages in memory AND persist to sessionStorage, but with auto-vanish
-  let messageList = [];               // each: { id, sender, text, timestamp }
-
-  const VANISH_DELAY_MS = 5000;       // 5 seconds after being seen (delivered)
-
-  // Helper functions
-  function saveMessagesToStorage() {
-    try {
-      // store full list, but only for current session per device
-      sessionStorage.setItem('sec_chat_msgs', JSON.stringify(messageList));
-    } catch(e) {}
-  }
-
-  function loadMessagesFromStorage() {
-    try {
-      const stored = sessionStorage.getItem('sec_chat_msgs');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          messageList = parsed;
-          // re-render all messages without duplication
-          renderAllMessages();
-          scheduleAllVanishing();
-        }
-      }
-    } catch(e) {}
-  }
+  // ========== MESSAGE SYSTEM ==========
+  const STORAGE_KEY = 'secret_calc_chat';
+  let allMessages = []; // { id, sender, text, timestamp, seen }
+  const SEEN_TIMEOUT = 5000; // 5 seconds after seen
 
   // DOM elements
-  const messagesContainer = document.getElementById('messagesContainer');
+  const messagesDiv = document.getElementById('messagesContainer');
   const otherHintSpan = document.getElementById('otherHint');
+  const chatInput = document.getElementById('chatMessageInput');
 
-  function renderMessageItem(msgObj, isNew = true) {
-    const isMine = (msgObj.sender === currentSessionUser);
-    const messageDiv = document.createElement('div');
-    messageDiv.className = `bubble ${isMine ? 'sent' : 'recv'}`;
-    messageDiv.id = `msgblob_${msgObj.id}`;
-
-    const senderName = isMine ? 'you' : msgObj.sender;
-    const timeStr = new Date(msgObj.timestamp).toLocaleTimeString([], { hour: '2-digit', minute:'2-digit' });
-    messageDiv.innerHTML = `
-      <div>${escapeHtml(msgObj.text)}</div>
-      <div class="msg-meta">${senderName} • ${timeStr}</div>
-    `;
-    // insert before the hint element if exists, else append
-    if (otherHintSpan && otherHintSpan.parentNode === messagesContainer) {
-      messagesContainer.insertBefore(messageDiv, otherHintSpan);
-    } else {
-      messagesContainer.appendChild(messageDiv);
-    }
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  // Helper
+  function escapeHtml(t) {
+    return t.replace(/[&<>]/g, function(m) {
+      if (m === '&') return '&amp;';
+      if (m === '<') return '&lt;';
+      if (m === '>') return '&gt;';
+      return m;
+    });
   }
 
-  function renderAllMessages() {
-    if (!messagesContainer) return;
-    // clear all except the hint element
-    const children = [...messagesContainer.children];
-    for (let child of children) {
-      if (child !== otherHintSpan) child.remove();
-    }
-    // re-render all in order
-    for (let msg of messageList) {
-      renderMessageItem(msg, false);
-    }
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  // Save to localStorage
+  function persistMessages() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(allMessages));
   }
 
-  function scheduleMessageVanish(messageId) {
-    const targetMsg = messageList.find(m => m.id === messageId);
-    if (!targetMsg) return;
-    // compute remaining time based on creation
-    const age = Date.now() - targetMsg.timestamp;
-    let remainingDelay = VANISH_DELAY_MS - age;
-    if (remainingDelay < 0) remainingDelay = 10;
+  // Load from storage
+  function loadMessages() {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      try {
+        allMessages = JSON.parse(stored);
+      } catch(e) { allMessages = []; }
+    }
+  }
+
+  // Mark a specific message as SEEN (when receiver views it)
+  function markAsSeen(msgId) {
+    const msg = allMessages.find(m => m.id === msgId);
+    if (msg && !msg.seen && msg.sender !== currentUser) {
+      msg.seen = true;
+      msg.seenAt = Date.now();
+      persistMessages();
+      renderAllMessages();
+      
+      // Schedule deletion after SEEN_TIMEOUT
+      scheduleMessageDeletion(msgId, SEEN_TIMEOUT);
+    }
+  }
+
+  // Check for unseen messages and mark them as seen (when user is active in chat)
+  function markAllUnseenAsSeen() {
+    if (!currentUser || !isUserActive) return;
+    
+    for (let msg of allMessages) {
+      if (msg.sender !== currentUser && !msg.seen) {
+        markAsSeen(msg.id);
+      }
+    }
+  }
+
+  // Delete message after delay (only if it's seen OR if sender is exiting)
+  function scheduleMessageDeletion(msgId, delay) {
     setTimeout(() => {
-      vanishMessageById(messageId);
-    }, remainingDelay);
+      const msgIndex = allMessages.findIndex(m => m.id === msgId);
+      if (msgIndex !== -1) {
+        const msg = allMessages[msgIndex];
+        // Delete only if seen (or if forced by exit)
+        if (msg.seen) {
+          deleteMessageById(msgId);
+        }
+      }
+    }, delay);
   }
 
-  function vanishMessageById(msgId) {
-    const msgIndex = messageList.findIndex(m => m.id === msgId);
-    if (msgIndex === -1) return;
-    // remove from DOM with animation
-    const domEl = document.getElementById(`msgblob_${msgId}`);
-    if (domEl) {
-      domEl.classList.add('vanishing-bubble');
-      domEl.addEventListener('animationend', () => {
-        if (domEl.parentNode) domEl.remove();
+  // Immediate delete message (used on exit)
+  function deleteMessageById(msgId) {
+    const index = allMessages.findIndex(m => m.id === msgId);
+    if (index === -1) return;
+    
+    const msgElement = document.getElementById(`msg_${msgId}`);
+    if (msgElement) {
+      msgElement.classList.add('vanishing-bubble');
+      msgElement.addEventListener('animationend', () => {
+        if (msgElement.parentNode) msgElement.remove();
       });
     }
-    // remove from data array
-    messageList.splice(msgIndex, 1);
-    saveMessagesToStorage();
+    
+    allMessages.splice(index, 1);
+    persistMessages();
   }
 
-  function scheduleAllVanishing() {
-    for (let msg of messageList) {
-      scheduleMessageVanish(msg.id);
+  // Delete ALL messages from current user when they exit
+  function deleteAllCurrentUserMessages() {
+    const toDelete = allMessages.filter(m => m.sender === currentUser);
+    for (let msg of toDelete) {
+      deleteMessageById(msg.id);
     }
   }
 
-  function addNewMessage(sender, text) {
+  // Add new message
+  function addMessage(sender, text) {
+    if (!text.trim()) return null;
+    
     const newMsg = {
       id: Date.now() + '_' + Math.random().toString(36).substr(2, 6),
       sender: sender,
       text: text.trim(),
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      seen: false
     };
-    messageList.push(newMsg);
-    saveMessagesToStorage();
-    renderMessageItem(newMsg, true);
-    scheduleMessageVanish(newMsg.id);
+    
+    allMessages.push(newMsg);
+    persistMessages();
+    renderAllMessages();
+    
+    // If current user is receiver and active, mark seen immediately
+    if (sender !== currentUser && isUserActive) {
+      setTimeout(() => markAsSeen(newMsg.id), 100);
+    }
+    
     return newMsg;
   }
 
-  // ---------- MESSAGING LOGIC BETWEEN nil AND hi ----------
-  function sendMessageToOther() {
-    const inputField = document.getElementById('chatMessageInput');
-    const rawText = inputField.value;
-    if (!rawText.trim()) return;
-    const finalText = rawText.trim();
-    inputField.value = '';
-    if (!currentSessionUser || !otherPeer) return;
-    // Add local message
-    addNewMessage(currentSessionUser, finalText);
-    // Simulate "other user" receiving after a short realistic delay (300ms)
-    // because realtime: both tabs will sync via storage event. But also to reflect both ends we
-    // simulate: since both users may use same browser? but on Vercel this is a single client.
-    // However both 'nil' and 'hi' can be used in same browser or different tabs? but requirement:
-    // two people can chat: "nil" and "hi" both added. Since both can login on separate devices
-    // OR same device via separate browser windows, but we also implement cross-window sync.
-    // We'll use storage event + periodic polling to feel realtime.
-    // Also simulate immediate response from other? No, but storage sync will work.
-    // Force a small sync to reflect reverse side soon: but the other person's session will poll every second.
+  // Render all messages
+  function renderAllMessages() {
+    if (!messagesDiv) return;
+    
+    const children = [...messagesDiv.children];
+    for (let child of children) {
+      if (child !== otherHintSpan) child.remove();
+    }
+    
+    for (let msg of allMessages) {
+      renderSingleMessage(msg);
+    }
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
   }
 
-  // incoming polling (every 600 ms) from sessionStorage
-  let lastKnownMsgIds = new Set();
+  function renderSingleMessage(msg) {
+    const isMine = (msg.sender === currentUser);
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `bubble ${isMine ? 'sent' : 'recv'}`;
+    if (!isMine && msg.seen) msgDiv.classList.add('seen-badge');
+    msgDiv.id = `msg_${msg.id}`;
+    
+    const senderLabel = isMine ? 'you' : msg.sender;
+    const timeStr = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute:'2-digit' });
+    const seenBadge = (!isMine && msg.seen) ? '<span style="font-size:8px; margin-left:6px;">✓✓</span>' : '';
+    
+    msgDiv.innerHTML = `
+      <div>${escapeHtml(msg.text)}</div>
+      <div class="msg-meta">${senderLabel} • ${timeStr} ${seenBadge}</div>
+    `;
+    
+    if (otherHintSpan && otherHintSpan.parentNode === messagesDiv) {
+      messagesDiv.insertBefore(msgDiv, otherHintSpan);
+    } else {
+      messagesDiv.appendChild(msgDiv);
+    }
+  }
 
-  function syncRemoteMessages() {
-    if (!currentSessionUser) return;
-    try {
-      const remoteData = sessionStorage.getItem('sec_chat_msgs');
-      if (remoteData) {
-        const remoteMsgs = JSON.parse(remoteData);
-        if (Array.isArray(remoteMsgs)) {
-          let changed = false;
-          for (let rMsg of remoteMsgs) {
-            const existsLocally = messageList.some(l => l.id === rMsg.id);
-            if (!existsLocally) {
-              // new message from other user
-              messageList.push(rMsg);
-              changed = true;
-              renderMessageItem(rMsg, true);
-              scheduleMessageVanish(rMsg.id);
-            }
-          }
-          // Also handle deletions (if vanished from other side) - but vanish is local, avoid conflict.
-          // To keep consistency: remove messages that are not in remote but we have? 
-          // However vanish is per client, but we respect vanish individually. But we don't want ghost.
-          // simpler: sync only additions.
-          if (changed) {
-            saveMessagesToStorage();
-          }
+  // Send message
+  function sendMessage() {
+    if (!currentUser || !isUserActive) return;
+    const text = chatInput.value.trim();
+    if (!text) return;
+    chatInput.value = '';
+    addMessage(currentUser, text);
+  }
+
+  // Cross-tab sync
+  window.addEventListener('storage', (e) => {
+    if (e.key === STORAGE_KEY && currentUser) {
+      const oldIds = allMessages.map(m => m.id);
+      loadMessages();
+      
+      // Check for new messages from other user
+      for (let msg of allMessages) {
+        if (!oldIds.includes(msg.id) && msg.sender !== currentUser && !msg.seen && isUserActive) {
+          markAsSeen(msg.id);
         }
       }
-    } catch(e) {}
-  }
+      renderAllMessages();
+    }
+  });
 
-  // start periodic sync (simulate two-way chat on same browser or different tabs)
+  // Periodic check for new messages
   setInterval(() => {
-    if (currentSessionUser) {
-      syncRemoteMessages();
+    if (currentUser && isUserActive) {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (JSON.stringify(parsed) !== JSON.stringify(allMessages)) {
+          loadMessages();
+          renderAllMessages();
+          markAllUnseenAsSeen();
+        }
+      }
     }
-  }, 700);
+  }, 800);
 
-  // also listen to storage event for cross-tab realtime
-  window.addEventListener('storage', (event) => {
-    if (event.key === 'sec_chat_msgs' && currentSessionUser) {
-      syncRemoteMessages();
-    }
-  });
-
-  // send message handler
-  function dispatchMessage() {
-    if (!currentSessionUser) return;
-    sendMessageToOther();
-  }
-
-  // enter key
-  document.getElementById('chatMessageInput')?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      dispatchMessage();
-    }
-  });
-
-  // ---------- LOGIC ----------
-  function attemptLogin() {
-    const nameInput = document.getElementById('loginName').value.trim().toLowerCase();
-    const passInput = document.getElementById('loginPass').value.trim();
-    if (ALLOWED_CRED[nameInput] && ALLOWED_CRED[nameInput] === passInput) {
-      currentSessionUser = nameInput;
-      otherPeer = (nameInput === 'nil') ? 'hi' : 'nil';
-      document.getElementById('displayCurrentUser').innerText = currentSessionUser;
-      document.getElementById('otherHint').innerHTML = `◈ ${otherPeer} ◈`;
-      // reset message list for new session? but keep existing messages from storage if any? but vanish anyway
-      // Better fresh start per login? but experience wise keep previous messages might be confusing.
-      // However requirement: messages disappear 5 sec after seen so no long history. But we load from storage but vanish soon.
-      messageList = [];
-      saveMessagesToStorage();
-      // load any existing from storage ? but we will sync anyway.
-      loadMessagesFromStorage();
-      document.getElementById('loginScreen').style.display = 'none';
-      document.getElementById('app').style.display = 'flex';
-      document.getElementById('chatMessageInput').focus();
-    } else {
-      const errDiv = document.getElementById('loginErr');
-      errDiv.innerText = 'access denied';
-      setTimeout(() => errDiv.innerText = '', 1800);
-    }
-  }
-
-  function performLogout() {
-    currentSessionUser = null;
-    otherPeer = null;
-    messageList = [];
-    saveMessagesToStorage();
+  // ========== EXIT HANDLER ==========
+  function performExit() {
+    if (!currentUser) return;
+    
+    // Mark that user is exiting
+    isUserActive = false;
+    
+    // Delete all messages sent by current user (immediate vanish)
+    deleteAllCurrentUserMessages();
+    
+    // Logout
+    currentUser = null;
+    otherUser = null;
+    allMessages = [];
+    persistMessages();
+    
     document.getElementById('loginScreen').style.display = 'flex';
     document.getElementById('app').style.display = 'none';
     document.getElementById('loginName').value = '';
     document.getElementById('loginPass').value = '';
-    const container = document.getElementById('messagesContainer');
-    if (container) {
-      const children = [...container.children];
-      for (let child of children) {
-        if (child !== otherHintSpan) child.remove();
+    
+    if (messagesDiv) {
+      const kids = [...messagesDiv.children];
+      for (let kid of kids) {
+        if (kid !== otherHintSpan) kid.remove();
       }
     }
   }
 
-  // password enter shortcut
-  document.getElementById('loginPass')?.addEventListener('keydown', (e) => {
-    if(e.key === 'Enter') attemptLogin();
+  // ========== LOGIN ==========
+  function attemptLogin() {
+    const name = document.getElementById('loginName').value.trim().toLowerCase();
+    const pass = document.getElementById('loginPass').value.trim();
+    
+    if (USERS[name] && USERS[name] === pass) {
+      currentUser = name;
+      otherUser = (name === 'nil') ? 'hi' : 'nil';
+      isUserActive = true;
+      
+      document.getElementById('displayCurrentUser').innerText = currentUser;
+      otherHintSpan.innerHTML = `◈ ${otherUser} is online ◈`;
+      
+      loadMessages();
+      renderAllMessages();
+      
+      // Mark all unseen messages as seen immediately when user logs in
+      markAllUnseenAsSeen();
+      
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('app').style.display = 'flex';
+      chatInput.focus();
+    } else {
+      document.getElementById('loginErr').innerText = '❌ invalid credentials';
+      setTimeout(() => document.getElementById('loginErr').innerText = '', 2000);
+    }
+  }
+
+  // Enter key handlers
+  chatInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') sendMessage();
+  });
+  document.getElementById('loginPass').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') attemptLogin();
+  });
+  
+  // Focus on chat area marks messages as seen
+  chatInput.addEventListener('focus', () => {
+    if (currentUser && isUserActive) {
+      markAllUnseenAsSeen();
+    }
+  });
+  
+  // When user scrolls or interacts, mark seen
+  messagesDiv.addEventListener('scroll', () => {
+    if (currentUser && isUserActive) {
+      markAllUnseenAsSeen();
+    }
   });
 
-  // ---------- FULL CALCULATOR ----------
+  // ========== CALCULATOR ==========
   let calc = {
-    currentDisplay: "0",
-    prevValue: null,
-    operator: null,
-    waitingForOperand: false,
-    expressionPreview: ""
+    display: "0",
+    prev: null,
+    op: null,
+    waitOperand: false,
+    expr: ""
   };
 
-  function updateCalcUI() {
-    document.getElementById('calcResultDisplay').innerText = calc.currentDisplay;
-    document.getElementById('calcExpression').innerText = calc.expressionPreview;
+  function updateCalc() {
+    document.getElementById('calcResultDisplay').innerText = calc.display;
+    document.getElementById('calcExpression').innerText = calc.expr;
   }
 
-  function calcInputNumber(num) {
-    if (calc.waitingForOperand) {
-      calc.currentDisplay = num;
-      calc.waitingForOperand = false;
+  function numClick(n) {
+    if (calc.waitOperand) {
+      calc.display = n;
+      calc.waitOperand = false;
     } else {
-      calc.currentDisplay = calc.currentDisplay === "0" ? num : calc.currentDisplay + num;
+      calc.display = calc.display === "0" ? n : calc.display + n;
     }
-    updateCalcUI();
+    updateCalc();
   }
 
-  function calcInputDecimal() {
-    if (calc.waitingForOperand) {
-      calc.currentDisplay = "0.";
-      calc.waitingForOperand = false;
-    } else if (!calc.currentDisplay.includes(".")) {
-      calc.currentDisplay += ".";
+  function dotClick() {
+    if (calc.waitOperand) {
+      calc.display = "0.";
+      calc.waitOperand = false;
+    } else if (!calc.display.includes(".")) {
+      calc.display += ".";
     }
-    updateCalcUI();
+    updateCalc();
   }
 
-  function handleOperator(op) {
-    const inputVal = parseFloat(calc.currentDisplay);
-    if (calc.prevValue !== null && calc.operator && !calc.waitingForOperand) {
-      let result = evaluate(calc.prevValue, inputVal, calc.operator);
-      calc.currentDisplay = String(result);
-      calc.prevValue = result;
+  function opClick(op) {
+    const val = parseFloat(calc.display);
+    if (calc.prev !== null && calc.op && !calc.waitOperand) {
+      let res = compute(calc.prev, val, calc.op);
+      calc.display = String(res);
+      calc.prev = res;
     } else {
-      calc.prevValue = inputVal;
+      calc.prev = val;
     }
-    calc.operator = op;
-    calc.waitingForOperand = true;
-    calc.expressionPreview = `${calc.prevValue} ${op === '*' ? '×' : op === '/' ? '÷' : op}`;
-    updateCalcUI();
+    calc.op = op;
+    calc.waitOperand = true;
+    calc.expr = `${calc.prev} ${op === '*' ? '×' : op === '/' ? '÷' : op}`;
+    updateCalc();
   }
 
-  function evaluate(a, b, op) {
+  function compute(a, b, op) {
     switch(op) {
       case '+': return a + b;
       case '-': return a - b;
@@ -737,110 +733,83 @@
     }
   }
 
-  function computeResult() {
-    if (calc.operator === null || calc.waitingForOperand) return;
-    const secondOperand = parseFloat(calc.currentDisplay);
-    let result = evaluate(calc.prevValue, secondOperand, calc.operator);
-    calc.expressionPreview = `${calc.prevValue} ${calc.operator === '*' ? '×' : calc.operator === '/' ? '÷' : calc.operator} ${secondOperand} =`;
-    calc.currentDisplay = String(result);
-    calc.prevValue = null;
-    calc.operator = null;
-    calc.waitingForOperand = true;
-    updateCalcUI();
+  function equalClick() {
+    if (calc.op === null || calc.waitOperand) return;
+    const second = parseFloat(calc.display);
+    const res = compute(calc.prev, second, calc.op);
+    calc.expr = `${calc.prev} ${calc.op === '*' ? '×' : calc.op === '/' ? '÷' : calc.op} ${second} =`;
+    calc.display = String(res);
+    calc.prev = null;
+    calc.op = null;
+    calc.waitOperand = true;
+    updateCalc();
   }
 
   function clearCalc() {
-    calc = {
-      currentDisplay: "0",
-      prevValue: null,
-      operator: null,
-      waitingForOperand: false,
-      expressionPreview: ""
-    };
-    updateCalcUI();
+    calc = { display: "0", prev: null, op: null, waitOperand: false, expr: "" };
+    updateCalc();
   }
 
-  function toggleSign() {
-    let curr = parseFloat(calc.currentDisplay);
-    calc.currentDisplay = String(-curr);
-    updateCalcUI();
+  function signClick() {
+    calc.display = String(parseFloat(calc.display) * -1);
+    updateCalc();
   }
 
-  function percentCalc() {
-    let curr = parseFloat(calc.currentDisplay);
-    calc.currentDisplay = String(curr / 100);
-    updateCalcUI();
+  function percentClick() {
+    calc.display = String(parseFloat(calc.display) / 100);
+    updateCalc();
   }
 
-  // generate calculator UI buttons dynamically
-  function buildCalculator() {
+  function buildCalcButtons() {
     const grid = document.getElementById('calcGrid');
     if (!grid) return;
     grid.innerHTML = '';
-    const buttons = [
-      { label: 'C', action: 'clear', cls: 'clear' }, { label: '+/-', action: 'sign', cls: 'operator' }, { label: '%', action: 'percent', cls: 'operator' }, { label: '÷', action: 'op_div', cls: 'operator' },
-      { label: '7', action: 'num7', cls: '' }, { label: '8', action: 'num8', cls: '' }, { label: '9', action: 'num9', cls: '' }, { label: '×', action: 'op_mul', cls: 'operator' },
-      { label: '4', action: 'num4', cls: '' }, { label: '5', action: 'num5', cls: '' }, { label: '6', action: 'num6', cls: '' }, { label: '−', action: 'op_sub', cls: 'operator' },
-      { label: '1', action: 'num1', cls: '' }, { label: '2', action: 'num2', cls: '' }, { label: '3', action: 'num3', cls: '' }, { label: '+', action: 'op_add', cls: 'operator' },
-      { label: '0', action: 'num0', cls: 'zero' }, { label: '.', action: 'dot', cls: '' }, { label: '=', action: 'equal', cls: 'equal' }
+    const btns = [
+      { label: 'C', act: 'clear', cls: 'clear' }, { label: '+/-', act: 'sign', cls: 'operator' }, { label: '%', act: 'percent', cls: 'operator' }, { label: '÷', act: 'div', cls: 'operator' },
+      { label: '7', act: '7', cls: '' }, { label: '8', act: '8', cls: '' }, { label: '9', act: '9', cls: '' }, { label: '×', act: 'mul', cls: 'operator' },
+      { label: '4', act: '4', cls: '' }, { label: '5', act: '5', cls: '' }, { label: '6', act: '6', cls: '' }, { label: '−', act: 'sub', cls: 'operator' },
+      { label: '1', act: '1', cls: '' }, { label: '2', act: '2', cls: '' }, { label: '3', act: '3', cls: '' }, { label: '+', act: 'add', cls: 'operator' },
+      { label: '0', act: '0', cls: '' }, { label: '.', act: 'dot', cls: '' }, { label: '=', act: 'equal', cls: 'equal' }
     ];
-    for (let btn of buttons) {
-      const btnEl = document.createElement('button');
-      btnEl.className = `calc-key ${btn.cls}`;
-      btnEl.innerText = btn.label;
-      btnEl.onclick = () => {
-        if (btn.action === 'clear') clearCalc();
-        else if (btn.action === 'sign') toggleSign();
-        else if (btn.action === 'percent') percentCalc();
-        else if (btn.action === 'op_div') handleOperator('/');
-        else if (btn.action === 'op_mul') handleOperator('*');
-        else if (btn.action === 'op_sub') handleOperator('-');
-        else if (btn.action === 'op_add') handleOperator('+');
-        else if (btn.action === 'equal') computeResult();
-        else if (btn.action === 'dot') calcInputDecimal();
-        else if (btn.action.startsWith('num')) {
-          const digit = btn.label;
-          calcInputNumber(digit);
-        }
+    
+    for (let b of btns) {
+      const btn = document.createElement('button');
+      btn.className = `calc-key ${b.cls}`;
+      btn.innerText = b.label;
+      btn.onclick = () => {
+        if (b.act === 'clear') clearCalc();
+        else if (b.act === 'sign') signClick();
+        else if (b.act === 'percent') percentClick();
+        else if (b.act === 'div') opClick('/');
+        else if (b.act === 'mul') opClick('*');
+        else if (b.act === 'sub') opClick('-');
+        else if (b.act === 'add') opClick('+');
+        else if (b.act === 'equal') equalClick();
+        else if (b.act === 'dot') dotClick();
+        else if (!isNaN(b.act)) numClick(b.act);
       };
-      grid.appendChild(btnEl);
+      grid.appendChild(btn);
     }
-    // zero span style not needed but ok
   }
 
-  function escapeHtml(str) {
-    return str.replace(/[&<>]/g, function(m) {
-      if (m === '&') return '&amp;';
-      if (m === '<') return '&lt;';
-      if (m === '>') return '&gt;';
-      return m;
-    });
-  }
-
-  // global key support for calculator but not interfering with chat input
+  // Keyboard support
   document.addEventListener('keydown', (e) => {
-    const activeEl = document.activeElement;
-    if (activeEl && (activeEl.id === 'chatMessageInput' || activeEl.id === 'loginName' || activeEl.id === 'loginPass')) return;
+    const active = document.activeElement;
+    if (active && (active.id === 'chatMessageInput' || active.id === 'loginName' || active.id === 'loginPass')) return;
     const key = e.key;
-    if (/^[0-9]$/.test(key)) calcInputNumber(key);
-    else if (key === '.') calcInputDecimal();
-    else if (key === '+') handleOperator('+');
-    else if (key === '-') handleOperator('-');
-    else if (key === '*') handleOperator('*');
-    else if (key === '/') { e.preventDefault(); handleOperator('/'); }
-    else if (key === 'Enter' || key === '=') computeResult();
+    if (/^[0-9]$/.test(key)) numClick(key);
+    else if (key === '.') dotClick();
+    else if (key === '+') opClick('+');
+    else if (key === '-') opClick('-');
+    else if (key === '*') opClick('*');
+    else if (key === '/') { e.preventDefault(); opClick('/'); }
+    else if (key === 'Enter' || key === '=') equalClick();
     else if (key === 'Escape') clearCalc();
-    else if (key === '%') percentCalc();
+    else if (key === '%') percentClick();
   });
 
-  buildCalculator();
-  updateCalcUI();
-
-  // initial load
-  window.onload = () => {
-    document.getElementById('loginScreen').style.display = 'flex';
-    document.getElementById('app').style.display = 'none';
-  };
+  buildCalcButtons();
+  updateCalc();
 </script>
 </body>
 </html>
